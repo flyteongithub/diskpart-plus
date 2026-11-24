@@ -44,6 +44,36 @@ jobs:
           -p:EnableCompressionInSingleFile=true -p:DebugType=none
           --output publish/win-x64
 
+      - name: Render the UI
+        shell: pwsh
+        run: |
+          # Make a throwaway virtual disk laid out like a Mac drive, so there's something to show.
+          $vhd = Join-Path $env:RUNNER_TEMP 'mac-drive.vhdx'
+          $script = Join-Path $env:RUNNER_TEMP 'mac-drive.txt'
+          @(
+            "create vdisk file=`"$vhd`" maximum=32768 type=expandable",
+            "attach vdisk",
+            "convert gpt",
+            "create partition efi size=200",
+            "format fs=fat32 label=`"EFI`" quick",
+            "create partition primary",
+            "set id=7c3457ef-0000-11aa-aa11-00306543ecac override"
+          ) | Set-Content -Encoding ascii $script
+          diskpart /s $script | Out-Null
+          Start-Sleep -Seconds 15
+
+          $out = Join-Path $env:RUNNER_TEMP 'ui'
+          $app = Start-Process publish/win-x64/DiskpartPlus.exe -ArgumentList '--render-to', $out -PassThru
+          if (-not $app.WaitForExit(180000)) { $app.Kill(); throw 'The app did not finish rendering in time.' }
+          "App exit code: $($app.ExitCode)"
+          if (Test-Path "$out/error.txt") { Get-Content "$out/error.txt" }
+          foreach ($f in Get-ChildItem $out -Filter *.png) {
+            "BEGIN-PNG $($f.Name)"
+            [Convert]::ToBase64String([IO.File]::ReadAllBytes($f.FullName), 'InsertLineBreaks')
+            "END-PNG"
+          }
+          if ($app.ExitCode -ne 0) { exit 1 }
+
       - uses: actions/upload-artifact@v4
         with:
           name: DiskpartPlus-win-x64

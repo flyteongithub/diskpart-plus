@@ -24,6 +24,12 @@ public partial class App : Application
             return;
         }
 
+        if (e.Args is [UiSnapshot.Flag, var folder, ..])
+        {
+            _ = UiSnapshot.RunAsync(this, folder);
+            return;
+        }
+
         var window = new MainWindow();
         MainWindow = window;
         window.Show();
