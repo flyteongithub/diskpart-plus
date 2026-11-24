@@ -1,8 +1,10 @@
 name: Release
 
+# Publish a release on GitHub (Releases > Draft a new release, tag like v0.1.0) and this
+# builds the app and attaches the .exe files to it.
 on:
-  push:
-    tags: ['v*']
+  release:
+    types: [published]
 
 permissions:
   contents: write
@@ -14,6 +16,8 @@ jobs:
     env:
       DISKPARTPLUS_INTEGRATION: '1'
       DOTNET_NOLOGO: '1'
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.event.release.tag_name }}
 
     steps:
       - uses: actions/checkout@v7
@@ -28,7 +32,7 @@ jobs:
       - name: Publish x64 and ARM64
         shell: pwsh
         run: |
-          $version = "${{ github.ref_name }}".TrimStart('v')
+          $version = $env:TAG.TrimStart('v')
           foreach ($rid in 'win-x64', 'win-arm64') {
             dotnet publish src/DiskpartPlus.App/DiskpartPlus.App.csproj `
               --configuration Release --runtime $rid --self-contained `
@@ -39,15 +43,15 @@ jobs:
             Copy-Item "publish/$rid/DiskpartPlus.exe" "DiskpartPlus-$version-$rid.exe"
           }
 
-      - name: Create the GitHub release
+      - name: Attach to the release
         shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          $version = "${{ github.ref_name }}".TrimStart('v')
-          gh release create "${{ github.ref_name }}" `
-            "DiskpartPlus-$version-win-x64.exe" `
-            "DiskpartPlus-$version-win-arm64.exe" `
-            --title "Diskpart+ ${{ github.ref_name }}" `
-            --notes-file docs/RELEASE_NOTES.md `
-            --prerelease
+          $version = $env:TAG.TrimStart('v')
+          gh release upload $env:TAG "DiskpartPlus-$version-win-x64.exe" "DiskpartPlus-$version-win-arm64.exe" --clobber
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          # Fill in the notes if the release was published without any.
+          $body = gh release view $env:TAG --json body --jq .body
+          if ([string]::IsNullOrWhiteSpace($body)) {
+            gh release edit $env:TAG --notes-file docs/RELEASE_NOTES.md
+          }
