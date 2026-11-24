@@ -76,8 +76,8 @@ internal static class UiSnapshot
     }
 
     // Windows won't let a window grow past the screen, and CI machines have small screens.
-    // So lift the window's content out, lay it out at a normal desktop size, take the
-    // picture, then put it back.
+    // So shrink the content with a layout transform until a normal desktop size fits, which
+    // makes it lay out exactly as it would at that size, then draw it back at full size.
     private static async Task SaveAt(Window window, double width, double height, string path)
     {
         if (window.Content is not FrameworkElement content)
@@ -85,25 +85,19 @@ internal static class UiSnapshot
             return;
         }
 
-        var dataContext = window.DataContext;
-        window.Content = null;
-        content.DataContext = dataContext;
+        var available = new Size(content.ActualWidth, content.ActualHeight);
+        var fit = Math.Min(1, Math.Min(available.Width / width, available.Height / height));
+        content.LayoutTransform = new ScaleTransform(fit, fit);
 
         try
         {
-            for (var pass = 0; pass < 2; pass++)
-            {
-                content.Measure(new Size(width, height));
-                content.Arrange(new Rect(0, 0, width, height));
-                await Task.Delay(300);
-                await window.Dispatcher.InvokeAsync(content.UpdateLayout, DispatcherPriority.ApplicationIdle);
-            }
-
-            Save(window, content, width, height, path);
+            await Settle(window);
+            Save(window, content, content.ActualWidth, content.ActualHeight, path);
         }
         finally
         {
-            window.Content = content;
+            content.LayoutTransform = Transform.Identity;
+            await Settle(window);
         }
     }
 
