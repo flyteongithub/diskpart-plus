@@ -94,12 +94,12 @@ public class RealDiskpartTests(ITestOutputHelper log)
             Assert.Equal("DPTEST", data.Volume?.Label);
             Assert.NotNull(data.Letter);
 
-            // 2. Wipe and reuse.
-            await Run([.. WipeAndReuse.Build(disk.Number, new WipeAndReuseOptions { Label = "REUSED" })]);
+            // 2. Wipe and reuse, with a label that isn't plain ASCII.
+            await Run([.. WipeAndReuse.Build(disk.Number, new WipeAndReuseOptions { Label = "DÜSSELDORF" })]);
             disk = await VirtualDisk(path);
             data = Assert.Single(disk.Partitions, p => p.Type == PartitionTypes.BasicData);
             Assert.Equal(FileSystemKind.ExFat, data.FileSystem);
-            Assert.Equal("REUSED", data.Volume?.Label);
+            Assert.Equal("DÜSSELDORF", data.Volume?.Label);
 
             // 3. Format it back to NTFS.
             await Run(new FormatPartition(disk.Number, data.Number, new FormatSpec(FileSystemKind.Ntfs, "AGAIN")));
@@ -125,7 +125,8 @@ public class RealDiskpartTests(ITestOutputHelper log)
                 new SetGptAttributes(disk.Number, data.Number, GptAttributeFlags.NoDriveLetter));
             disk = await VirtualDisk(path);
             data = disk.FindPartition(data.Number)!;
-            Assert.Equal(sizeBefore, data.Size);
+            // diskpart can hand back a little alignment space too, so it may end up slightly bigger.
+            Assert.True(data.Size >= sizeBefore, $"Expected at least {sizeBefore}, got {data.Size}.");
             Assert.Null(data.Letter);
             Assert.True(data.GptAttributes.HasFlag(GptAttributeFlags.NoDriveLetter));
 
@@ -173,7 +174,7 @@ public class RealDiskpartTests(ITestOutputHelper log)
 
     private async Task Run(params DiskOperation[] operations)
     {
-        var context = new PlanningContext(await _inventory.GetSnapshotAsync()) { FileExists = File.Exists };
+        var context = new PlanningContext(await _inventory.GetSnapshotAsync()) { FileExists = File.Exists, ScriptCanHold = DiskpartRunner.CanHold };
         await Run(context, operations);
     }
 

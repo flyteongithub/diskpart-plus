@@ -59,6 +59,7 @@ public static class IssueCodes
     public const string CantFormatTo = "cant-format-to";
     public const string LabelTooLong = "label-too-long";
     public const string LabelBadCharacter = "label-bad-character";
+    public const string UnsupportedCharacters = "unsupported-characters";
     public const string Fat32TooLarge = "fat32-too-large";
     public const string RefsEdition = "refs-edition";
     public const string LetterInUse = "letter-in-use";

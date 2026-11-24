@@ -88,7 +88,7 @@ internal static class OperationValidator
                 break;
 
             case DetachVirtualDisk detach:
-                if (CheckPath(detach, issues) && state.Snapshot.FindVirtualDisk(detach.FilePath) is null)
+                if (CheckPath(detach, state, issues) && state.Snapshot.FindVirtualDisk(detach.FilePath) is null)
                 {
                     issues.Add(Blocker(IssueCodes.NotAttached, $"{detach.FilePath} isn't attached.", detach));
                 }
@@ -224,7 +224,7 @@ internal static class OperationValidator
 
         if (create.Format is not null)
         {
-            CheckFormatSpec(create.Format, create.Size ?? free, create, issues);
+            CheckFormatSpec(create.Format, create.Size ?? free, create, state, issues);
         }
 
         if (create.Assign?.Letter is { } letter && state.IsLetterTaken(letter))
@@ -241,7 +241,7 @@ internal static class OperationValidator
             return;
         }
 
-        CheckFormatSpec(format.Format, partition.Size, format, issues);
+        CheckFormatSpec(format.Format, partition.Size, format, state, issues);
 
         if (!partition.Type.IsDataPartition)
         {
@@ -250,7 +250,7 @@ internal static class OperationValidator
         }
     }
 
-    private static void CheckFormatSpec(FormatSpec spec, ByteSize size, DiskOperation operation, List<PlanIssue> issues)
+    private static void CheckFormatSpec(FormatSpec spec, ByteSize size, DiskOperation operation, PlanState state, List<PlanIssue> issues)
     {
         var fs = spec.FileSystem;
         if (!fs.CanFormatTo())
@@ -269,6 +269,11 @@ internal static class OperationValidator
         {
             var shown = char.IsControl(bad) ? "a control character" : $"\"{bad}\"";
             issues.Add(Blocker(IssueCodes.LabelBadCharacter, $"{fs.DisplayName()} labels can't contain {shown}.", operation));
+        }
+        else if (!state.Context.ScriptCanHold(spec.Label))
+        {
+            issues.Add(Blocker(IssueCodes.UnsupportedCharacters,
+                "diskpart can't take some of the characters in that label with this PC's language settings. Try plain letters and numbers.", operation));
         }
 
         if (fs == FileSystemKind.Fat32 && size > Fat32FormatLimit)
@@ -412,7 +417,7 @@ internal static class OperationValidator
 
     private static void CheckCreateVirtualDisk(CreateVirtualDisk create, PlanState state, List<PlanIssue> issues)
     {
-        if (!CheckPath(create, issues))
+        if (!CheckPath(create, state, issues))
         {
             return;
         }
@@ -449,7 +454,7 @@ internal static class OperationValidator
                 issues.Add(Blocker(IssueCodes.InvalidStyle, "A disk can only be set up as GPT or MBR.", create));
             }
 
-            CheckFormatSpec(setup.Format, create.MaximumSize, create, issues);
+            CheckFormatSpec(setup.Format, create.MaximumSize, create, state, issues);
 
             if (setup.Assign?.Letter is { } letter && state.IsLetterTaken(letter))
             {
@@ -460,7 +465,7 @@ internal static class OperationValidator
 
     private static void CheckAttach(AttachVirtualDisk attach, PlanState state, List<PlanIssue> issues)
     {
-        if (!CheckPath(attach, issues))
+        if (!CheckPath(attach, state, issues))
         {
             return;
         }
@@ -475,7 +480,7 @@ internal static class OperationValidator
         }
     }
 
-    private static bool CheckPath(VirtualDiskFileOperation operation, List<PlanIssue> issues)
+    private static bool CheckPath(VirtualDiskFileOperation operation, PlanState state, List<PlanIssue> issues)
     {
         var path = operation.FilePath;
         var looksRooted = path.Length >= 3 && char.IsAsciiLetter(path[0]) && path[1] == ':' && path[2] is '\\' or '/';
@@ -486,7 +491,14 @@ internal static class OperationValidator
 
         if ((looksRooted || isUnc) && rightExtension && cleanCharacters)
         {
-            return true;
+            if (state.Context.ScriptCanHold(path))
+            {
+                return true;
+            }
+
+            issues.Add(Blocker(IssueCodes.UnsupportedCharacters,
+                "diskpart can't take some of the characters in that path with this PC's language settings. Pick a folder with a plain name, like C:\\VMs.", operation));
+            return false;
         }
 
         issues.Add(Blocker(IssueCodes.InvalidPath,

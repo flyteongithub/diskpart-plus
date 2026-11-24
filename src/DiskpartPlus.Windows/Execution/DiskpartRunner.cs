@@ -134,10 +134,35 @@ public sealed class DiskpartRunner : IDiskpartRunner
         return new DiskpartRunResult(process.ExitCode, snapshot, timer.Elapsed);
     }
 
-    // Plain ASCII when we can. If a label has accents or other non-ASCII characters,
-    // write UTF-16 with a byte order mark so diskpart reads them correctly.
+    /// <summary>
+    /// True if this text can go into a script on this PC. diskpart reads scripts in the console's
+    /// OEM code page (tested: ANSI, UTF-8 and UTF-16 all come out garbled), so anything that code
+    /// page can't hold would end up as the wrong characters.
+    /// </summary>
+    public static bool CanHold(string text)
+    {
+        if (text.All(char.IsAscii))
+        {
+            return true;
+        }
+
+        try
+        {
+            StrictOemEncoding().GetBytes(text);
+            return true;
+        }
+        catch (EncoderFallbackException)
+        {
+            return false;
+        }
+    }
+
     private static Encoding ScriptEncodingFor(DiskpartScript script) =>
-        script.Lines.All(l => l.All(char.IsAscii)) ? Encoding.ASCII : new UnicodeEncoding(bigEndian: false, byteOrderMark: true);
+        script.Lines.All(l => l.All(char.IsAscii)) ? Encoding.ASCII : StrictOemEncoding();
+
+    // Throws instead of quietly swapping in question marks, so a bad label never reaches diskpart.
+    private static Encoding StrictOemEncoding() =>
+        Encoding.GetEncoding(CultureInfo.CurrentCulture.TextInfo.OEMCodePage, EncoderFallback.ExceptionFallback, DecoderFallback.ReplacementFallback);
 
     private static Encoding OemEncoding()
     {

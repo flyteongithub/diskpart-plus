@@ -11,6 +11,7 @@ using DiskpartPlus.Core.Execution;
 using DiskpartPlus.Core.Models;
 using DiskpartPlus.Core.Operations;
 using DiskpartPlus.Core.Planning;
+using DiskpartPlus.Windows.Execution;
 
 namespace DiskpartPlus.App.ViewModels;
 
@@ -222,7 +223,7 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
-        var plan = OperationPlanner.Create(operations, new PlanningContext(_snapshot) { FileExists = File.Exists });
+        var plan = OperationPlanner.Create(operations, new PlanningContext(_snapshot) { FileExists = File.Exists, ScriptCanHold = DiskpartRunner.CanHold });
         var window = new PlanWindow(plan, _runner, _inventory) { Owner = _owner() };
         window.ShowDialog();
 

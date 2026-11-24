@@ -90,6 +90,15 @@ public class ValidationTests
     }
 
     [Fact]
+    public void Labels_this_pc_cant_put_in_a_script_are_blocked()
+    {
+        var context = TestDisks.Context() with { ScriptCanHold = text => text.All(char.IsAscii) };
+        var plan = OperationPlanner.Create([new FormatPartition(3, 1, new FormatSpec(FileSystemKind.Ntfs, "游戏"))], context);
+
+        Assert.True(Blocked(plan, IssueCodes.UnsupportedCharacters));
+    }
+
+    [Fact]
     public void Letters_already_in_use_are_blocked()
     {
         var plan = Plan(new CreatePartition(3, Size: ByteSize.FromGigabytes(10), Assign: new DriveAssignment(new DriveLetter('C'))));
