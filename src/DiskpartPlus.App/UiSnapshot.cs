@@ -53,6 +53,13 @@ internal static class UiSnapshot
                 await Settle(review);
                 await SaveAt(review, 760, 640, Path.Combine(folder, "review-light.png"));
                 review.Close();
+
+                // The little forms every action uses.
+                var (wipe, _) = Services.DiskActions.WipeAndReuseForm(main, snapshot, disk.Disk);
+                await SaveForm(wipe, Path.Combine(folder, "form-wipe-light.png"));
+
+                var (vhd, _) = Services.DiskActions.CreateVirtualDiskForm(main, snapshot);
+                await SaveForm(vhd, Path.Combine(folder, "form-vhd-light.png"));
             }
 
             app.ThemeMode = ThemeMode.Dark;
@@ -66,6 +73,18 @@ internal static class UiSnapshot
             await File.WriteAllTextAsync(Path.Combine(folder, "error.txt"), ex.ToString());
             app.Shutdown(2);
         }
+    }
+
+    private static async Task SaveForm(Window form, string path)
+    {
+        form.Show();
+        await Settle(form);
+        if (form.Content is FrameworkElement content)
+        {
+            Save(form, content, content.ActualWidth, content.ActualHeight, path);
+        }
+
+        form.Close();
     }
 
     // Give WPF a moment to finish layout, data binding and rendering.

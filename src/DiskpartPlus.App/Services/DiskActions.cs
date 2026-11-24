@@ -23,6 +23,13 @@ internal static class DiskActions
 
     public static IReadOnlyList<DiskOperation>? WipeAndReuse(Window owner, StorageSnapshot snapshot, DiskInfo disk)
     {
+        var (form, read) = WipeAndReuseForm(owner, snapshot, disk);
+        return form.Ask() ? read() : null;
+    }
+
+    // Split out so the UI check in CI can open the form without waiting for someone to click.
+    internal static (FormDialog Form, Func<IReadOnlyList<DiskOperation>> Read) WipeAndReuseForm(Window owner, StorageSnapshot snapshot, DiskInfo disk)
+    {
         var form = new FormDialog(owner, "Wipe and reuse",
             $"Removes everything on {disk.DisplayName} and makes one partition that fills the whole disk. Handy for drives that came from a Mac or had Linux on them.");
 
@@ -32,19 +39,14 @@ internal static class DiskActions
         var letter = form.AddChoice("Drive letter", LetterChoices(snapshot, includeNone: true));
         var zero = form.AddCheck("Overwrite every sector (clean all)", false, "Much slower, sometimes hours. Only needed if you're giving the drive away.");
 
-        if (!form.Ask())
-        {
-            return null;
-        }
-
-        return Core.Templates.WipeAndReuse.Build(disk.Number, new WipeAndReuseOptions
+        return (form, () => Core.Templates.WipeAndReuse.Build(disk.Number, new WipeAndReuseOptions
         {
             Style = FormDialog.ValueOf<PartitionStyle>(style),
             FileSystem = FormDialog.ValueOf<FileSystemKind>(fileSystem),
             Label = label.Text.Trim(),
             Assign = ToAssignment(FormDialog.ValueOf<LetterChoice>(letter)),
             ZeroEverySector = zero.IsChecked == true,
-        });
+        }));
     }
 
     public static IReadOnlyList<DiskOperation>? CreatePartition(Window owner, StorageSnapshot snapshot, DiskInfo disk)
@@ -226,6 +228,12 @@ internal static class DiskActions
 
     public static IReadOnlyList<DiskOperation>? CreateVirtualDisk(Window owner, StorageSnapshot snapshot)
     {
+        var (form, read) = CreateVirtualDiskForm(owner, snapshot);
+        return form.Ask() ? read() : null;
+    }
+
+    internal static (FormDialog Form, Func<IReadOnlyList<DiskOperation>> Read) CreateVirtualDiskForm(Window owner, StorageSnapshot snapshot)
+    {
         var defaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Virtual disk.vhdx");
         var form = new FormDialog(owner, "Create virtual disk", "Makes a .vhdx or .vhd file that Windows treats like a real disk. Great for testing.", "Continue");
         var path = form.AddPath("File", defaultPath, save: true, "Virtual disk (*.vhdx)|*.vhdx|Older virtual disk (*.vhd)|*.vhd", ".vhdx");
@@ -241,11 +249,12 @@ internal static class DiskActions
             ? null
             : "Size has to be a whole number of GB.";
 
-        if (!form.Ask())
-        {
-            return null;
-        }
+        return (form, () => ReadVirtualDiskForm(path, size, allocation, setup, style, fileSystem, label, letter));
+    }
 
+    private static IReadOnlyList<DiskOperation> ReadVirtualDiskForm(
+        TextBox path, TextBox size, ComboBox allocation, CheckBox setup, ComboBox style, ComboBox fileSystem, TextBox label, ComboBox letter)
+    {
         var gigabytes = long.Parse(size.Text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture);
         VirtualDiskSetup? diskSetup = setup.IsChecked == true
             ? new VirtualDiskSetup(
