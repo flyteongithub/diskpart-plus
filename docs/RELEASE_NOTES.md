@@ -7,12 +7,17 @@ Diskpart+ is a modern GUI for Windows' built-in diskpart.
 
 Single file, nothing to install. Run it, accept the admin prompt. It isn't code-signed yet, so if Windows shows "Windows protected your PC", click **More info** then **Run anyway**.
 
-## What's new in 0.2.0
+## What's new in 0.2.1
+
+- Tidier action rows: the common actions up front, the rest under **More**. The two virtual disk buttons are now one menu.
+- Hover tooltips on every action, including greyed-out ones.
+- Partition type descriptions moved to a tooltip on the Type column.
+
+## 0.2.0
 
 - No more typing to confirm. Format, delete and clean show one review screen with a red "Erase disk N" button.
-- Everything else (drive letters, online and offline, shrink, extend, attach, detach and so on) runs straight away. Output goes to the diskpart output panel.
-- Warnings cut down to the one that matters: `clean all` on an SSD. The blocks on the Windows disk stay.
-- Shorter text everywhere.
+- Everything else runs straight away, with output in the diskpart output panel.
+- Warnings cut down to `clean all` on an SSD. Shorter text everywhere.
 
 ## Known limitations
 
