@@ -91,11 +91,14 @@
                        VerticalAlignment="Center"
                        Visibility="{Binding NoDiskSelected, Converter={StaticResource BoolToVisibility}}" />
 
-            <!-- Selected disk -->
-            <DockPanel Grid.Column="2" Visibility="{Binding HasDiskSelected, Converter={StaticResource BoolToVisibility}}">
-
+            <!-- Selected disk. Scrolls when the window is too short to fit everything. -->
+            <ScrollViewer Grid.Column="2"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Visibility="{Binding HasDiskSelected, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
                 <!-- Disk header and disk actions -->
-                <Border DockPanel.Dock="Top" Style="{StaticResource Card}" Margin="0,0,0,12" Padding="16,14">
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12" Padding="16,14">
                     <StackPanel>
                         <TextBlock Text="{Binding SelectedDisk.Title}" Style="{StaticResource HeaderText}" />
                         <TextBlock Text="{Binding SelectedDisk.Subtitle}" Style="{StaticResource CaptionText}" Margin="0,2,0,0" />
@@ -186,20 +189,11 @@
 
                 <!-- Partitions -->
                 <Border Style="{StaticResource Card}">
-                    <DockPanel>
-                        <TextBlock DockPanel.Dock="Top" Text="Partitions" Style="{StaticResource SectionText}" Margin="0,0,0,8" />
-                        <WrapPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
-                            <Button Content="Format..." Command="{Binding FormatCommand}" Margin="0,0,8,8" />
-                            <Button Content="Delete" Command="{Binding DeleteCommand}" Margin="0,0,8,8" />
-                            <Button Content="Drive letter..." Command="{Binding ChangeLetterCommand}" Margin="0,0,8,8" />
-                            <Button Content="Remove letter" Command="{Binding RemoveLetterCommand}" Margin="0,0,8,8" />
-                            <Button Content="Extend..." Command="{Binding ExtendCommand}" Margin="0,0,8,8" />
-                            <Button Content="Shrink..." Command="{Binding ShrinkCommand}" Margin="0,0,8,8" />
-                            <Button Content="Change type..." Command="{Binding ChangeTypeCommand}" Margin="0,0,8,8" />
-                            <Button Content="GPT attributes..." Command="{Binding GptAttributesCommand}" Margin="0,0,8,8" />
-                        </WrapPanel>
+                    <StackPanel>
+                        <TextBlock Text="Partitions" Style="{StaticResource SectionText}" Margin="0,0,0,8" />
                         <Grid>
-                            <DataGrid ItemsSource="{Binding SelectedDisk.Partitions}"
+                            <DataGrid x:Name="PartitionGrid"
+                                      ItemsSource="{Binding SelectedDisk.Partitions}"
                                       SelectedItem="{Binding SelectedPartition}"
                                       AutoGenerateColumns="False"
                                       IsReadOnly="True"
@@ -210,7 +204,8 @@
                                       CanUserAddRows="False"
                                       CanUserDeleteRows="False"
                                       CanUserResizeRows="False"
-                                      MinHeight="120">
+                                      VerticalScrollBarVisibility="Disabled"
+                                      MinHeight="96">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="#" Binding="{Binding Number}" Width="40" />
                                     <DataGridTextColumn Header="Letter" Binding="{Binding LetterText}" Width="62" />
@@ -226,11 +221,23 @@
                                        Style="{StaticResource CaptionText}"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
+                                       Margin="0,28,0,0"
                                        Visibility="{Binding SelectedDisk.HasNoPartitions, Converter={StaticResource BoolToVisibility}}" />
                         </Grid>
-                    </DockPanel>
+                        <WrapPanel Margin="0,12,0,-8">
+                            <Button Content="Format..." Command="{Binding FormatCommand}" Margin="0,0,8,8" />
+                            <Button Content="Delete" Command="{Binding DeleteCommand}" Margin="0,0,8,8" />
+                            <Button Content="Drive letter..." Command="{Binding ChangeLetterCommand}" Margin="0,0,8,8" />
+                            <Button Content="Remove letter" Command="{Binding RemoveLetterCommand}" Margin="0,0,8,8" />
+                            <Button Content="Extend..." Command="{Binding ExtendCommand}" Margin="0,0,8,8" />
+                            <Button Content="Shrink..." Command="{Binding ShrinkCommand}" Margin="0,0,8,8" />
+                            <Button Content="Change type..." Command="{Binding ChangeTypeCommand}" Margin="0,0,8,8" />
+                            <Button Content="GPT attributes..." Command="{Binding GptAttributesCommand}" Margin="0,0,8,8" />
+                        </WrapPanel>
+                    </StackPanel>
                 </Border>
-            </DockPanel>
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
 
         <!-- diskpart output -->

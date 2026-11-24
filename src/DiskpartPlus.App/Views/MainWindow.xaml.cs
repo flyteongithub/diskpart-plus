@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Input;
 using DiskpartPlus.App.ViewModels;
 using DiskpartPlus.Windows.Execution;
 using DiskpartPlus.Windows.Inventory;
@@ -22,5 +23,17 @@ public partial class MainWindow : Window
         _viewModel = new MainViewModel(new CimStorageInventory(), new DiskpartRunner(), () => this);
         DataContext = _viewModel;
         Loaded += async (_, _) => await _viewModel.RefreshAsync();
+
+        // The table sits inside a scrolling panel, so pass the mouse wheel up to it.
+        PartitionGrid.PreviewMouseWheel += (sender, e) =>
+        {
+            e.Handled = true;
+            var forwarded = new MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta)
+            {
+                RoutedEvent = MouseWheelEvent,
+                Source = sender,
+            };
+            ((UIElement)PartitionGrid.Parent).RaiseEvent(forwarded);
+        };
     }
 }
