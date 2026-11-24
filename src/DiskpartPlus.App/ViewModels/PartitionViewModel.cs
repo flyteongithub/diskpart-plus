@@ -17,6 +17,9 @@ public sealed class PartitionViewModel(PartitionInfo partition)
 
     public string TypeName => Partition.Type.Name;
 
+    /// <summary>Shown when hovering the type, e.g. "Holds the boot loader".</summary>
+    public string? TypeTip => Partition.Type.Notes;
+
     public string FileSystemText => Partition.Volume is null
         ? (Partition.Type.Family is PartitionFamily.Apple or PartitionFamily.Linux ? "Can't read on Windows" : string.Empty)
         : Partition.FileSystem.DisplayName();
@@ -38,7 +41,6 @@ public sealed class PartitionViewModel(PartitionInfo partition)
             if (Partition.HostsApplication) notes.Add("Diskpart+ runs here");
             if (Partition.Volume?.IsBitLockerProtected == true) notes.Add("BitLocker");
             if (Partition.IsHidden) notes.Add("Hidden");
-            if (Partition.Type.Notes is { } typeNote) notes.Add(typeNote);
             return string.Join(" · ", notes);
         }
     }

@@ -231,11 +231,17 @@
                                     <DataGridTextColumn Header="#" Binding="{Binding Number}" Width="40" />
                                     <DataGridTextColumn Header="Letter" Binding="{Binding LetterText}" Width="62" />
                                     <DataGridTextColumn Header="Label" Binding="{Binding Label}" Width="*" MinWidth="90" />
-                                    <DataGridTextColumn Header="Type" Binding="{Binding TypeName}" Width="1.4*" MinWidth="120" />
+                                    <DataGridTextColumn Header="Type" Binding="{Binding TypeName}" Width="1.4*" MinWidth="120">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock" BasedOn="{x:Static DataGridTextColumn.DefaultElementStyle}">
+                                                <Setter Property="ToolTip" Value="{Binding TypeTip}" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
                                     <DataGridTextColumn Header="File system" Binding="{Binding FileSystemText}" Width="*" MinWidth="104" />
                                     <DataGridTextColumn Header="Size" Binding="{Binding SizeText}" Width="84" />
                                     <DataGridTextColumn Header="Free" Binding="{Binding FreeText}" Width="84" />
-                                    <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" Width="1.5*" MinWidth="120" />
+                                    <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" Width="*" MinWidth="100" />
                                 </DataGrid.Columns>
                             </DataGrid>
                             <TextBlock Text="No partitions."
