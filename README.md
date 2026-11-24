@@ -16,9 +16,7 @@
 
 ## Why
 
-Disk Management is fine until you plug in a drive that came from a Mac. It won't delete the Mac's EFI partition, it shows the APFS partition as an unnamed blob and there's no button for half the things diskpart can do. So you end up in a command prompt typing `select disk 2` and hoping 2 is the right one.
-
-Diskpart+ puts a proper interface on top of diskpart. It's built around one idea: you should never wipe the wrong drive by accident.
+Diskpart+ puts a proper interface on top of diskpart.
 
 ## What it does
 
