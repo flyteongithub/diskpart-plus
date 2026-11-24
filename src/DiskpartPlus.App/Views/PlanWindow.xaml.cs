@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 using DiskpartPlus.Core.Execution;
@@ -11,8 +10,8 @@ using DiskpartPlus.Core.Safety;
 namespace DiskpartPlus.App.Views;
 
 /// <summary>
-/// Shows a plan before it runs (steps, warnings, the exact script and the typed confirmation),
-/// then runs it and shows diskpart's output live.
+/// The one check before anything that erases data: what will happen, the script, and a button
+/// that says exactly what it does. Then it runs and shows diskpart's output.
 /// </summary>
 public partial class PlanWindow : Window
 {
@@ -23,13 +22,13 @@ public partial class PlanWindow : Window
     private CancellationTokenSource? _stop;
     private bool _running;
 
-    public PlanWindow(OperationPlan plan, IDiskpartRunner runner, IStorageInventory inventory)
+    public PlanWindow(OperationPlan plan, IDiskpartRunner runner, IStorageInventory inventory, string? diskName = null)
     {
         InitializeComponent();
         _plan = plan;
         _runner = runner;
         _inventory = inventory;
-        ShowPlan();
+        ShowPlan(diskName);
     }
 
     /// <summary>True once diskpart has actually been started, so the disk list needs refreshing.</summary>
@@ -37,85 +36,54 @@ public partial class PlanWindow : Window
 
     public IReadOnlyList<string> Output => _output;
 
-    public sealed record IssueRow(string Kind, string Message, Brush Brush);
+    public sealed record IssueRow(string Message, Brush Brush);
 
-    private void ShowPlan()
+    private void ShowPlan(string? diskName)
     {
-        RiskText.Text = _plan.Risk switch
+        var verb = _plan.Risk == RiskLevel.Critical ? "Wipe" : "Erase";
+        var action = _plan.ErasedDisk is { } disk ? $"{verb} disk {disk}" : "Run";
+
+        HeadingText.Text = _plan.CanRun ? action + "?" : "Can't run this";
+        SubtitleText.Text = diskName ?? string.Empty;
+        SubtitleText.Visibility = string.IsNullOrEmpty(diskName) ? Visibility.Collapsed : Visibility.Visible;
+
+        StepsList.ItemsSource = _plan.Operations.Select(o => o.Describe()).ToList();
+        IssuesList.ItemsSource = _plan.Issues.Select(i => new IssueRow(i.Message, Palette.ForSeverity(i.Severity))).ToList();
+        ScriptBox.Text = _plan.Script?.ToText() ?? string.Empty;
+
+        RunButton.Content = action;
+        RunButton.IsEnabled = _plan.CanRun;
+        if (_plan.NeedsReview)
         {
-            RiskLevel.Safe => "SAFE",
-            RiskLevel.Caution => "CAUTION",
-            RiskLevel.Destructive => "ERASES DATA",
-            _ => "ERASES EVERYTHING",
-        };
-        RiskPill.Background = Palette.ForRisk(_plan.Risk);
-
-        HeadingText.Text = _plan.CanRun ? "Review changes" : "This can't run yet";
-        SummaryText.Text = _plan.CanRun
-            ? "Nothing has changed yet. Check the steps below, then run them."
-            : "Diskpart+ stopped this before it reached diskpart. The red items below say why.";
-
-        StepsList.ItemsSource = _plan.Operations.Select((o, i) => $"{i + 1}.  {o.Describe()}").ToList();
-
-        IssuesList.ItemsSource = _plan.Issues.Select(i => new IssueRow(
-            i.Severity switch
-            {
-                IssueSeverity.Blocker => "Blocked",
-                IssueSeverity.Warning => "Warning",
-                _ => "Note",
-            },
-            i.Message,
-            Palette.ForSeverity(i.Severity))).ToList();
-        IssuesHeader.Visibility = _plan.Issues.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-
-        ScriptBox.Text = _plan.Script?.ToText() ?? "No script could be built for this.";
-
-        if (_plan.CanRun && _plan.ConfirmationPhrase is { } phrase)
-        {
-            ConfirmLabel.Text = $"This erases data and can't be undone. Type {phrase} to confirm.";
-            ConfirmPanel.Visibility = Visibility.Visible;
+            RunButton.Background = Palette.Danger;
+            RunButton.Foreground = Palette.White;
         }
-        else
-        {
-            ConfirmPanel.Visibility = Visibility.Collapsed;
-        }
-
-        UpdateRunButton();
     }
-
-    private void UpdateRunButton() =>
-        RunButton.IsEnabled = !_running && _plan.CanRun && _plan.IsConfirmedBy(ConfirmBox.Text);
-
-    private void ConfirmBox_TextChanged(object sender, TextChangedEventArgs e) => UpdateRunButton();
 
     private async void Run_Click(object sender, RoutedEventArgs e)
     {
-        if (!_plan.CanRun || _plan.Script is null || !_plan.IsConfirmedBy(ConfirmBox.Text))
+        if (!_plan.CanRun || _plan.Script is null || _running)
         {
             return;
         }
 
         _running = true;
-        UpdateRunButton();
+        RunButton.IsEnabled = false;
         ReviewPanel.Visibility = Visibility.Collapsed;
-        ConfirmPanel.Visibility = Visibility.Collapsed;
         RunPanel.Visibility = Visibility.Visible;
         CancelButton.IsEnabled = false;
 
-        // Stopping halfway is only safe-ish for "clean all": the partitions are already gone by then.
+        // Stopping halfway is only reasonable for "clean all": the partitions are already gone by then.
         if (_plan.Operations.Any(o => o is CleanDisk { ZeroEverySector: true }))
         {
             _stop = new CancellationTokenSource();
             StopButton.Visibility = Visibility.Visible;
         }
 
-        var progress = new Progress<string>(Append);
-
         try
         {
-            RunStatus.Text = "Checking the disks haven't changed since you looked...";
-            var fresh = await _inventory.GetSnapshotAsync();
-            var problems = _plan.CheckTargetsStillMatch(fresh);
+            RunStatus.Text = "Running...";
+            var problems = _plan.CheckTargetsStillMatch(await _inventory.GetSnapshotAsync());
             if (problems.Count > 0)
             {
                 foreach (var problem in problems)
@@ -123,37 +91,32 @@ public partial class PlanWindow : Window
                     Append(problem);
                 }
 
-                Finish(false, "Nothing was run because the disks changed. Close this and check the list again.");
+                Finish(false, "Nothing ran. The disks changed.");
                 return;
             }
 
-            RunStatus.Text = "Running diskpart...";
-            Append("Script:");
-            foreach (var line in _plan.Script.Lines)
+            foreach (var line in _plan.Script.Commands)
             {
-                Append("    " + line);
+                Append("> " + line);
             }
 
-            Append(string.Empty);
             Ran = true;
-
-            var result = await _runner.RunAsync(_plan.Script, progress, _stop?.Token ?? CancellationToken.None);
+            var result = await _runner.RunAsync(_plan.Script, new Progress<string>(Append), _stop?.Token ?? CancellationToken.None);
 
             // Let any output lines still queued up land before the final message.
             await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background);
 
-            Append(string.Empty);
-            Append($"Exit code {result.CodeText} after {result.Duration.TotalSeconds:0.0} seconds.");
-            Finish(result.Succeeded, result.Succeeded ? "Done. " + result.Explain() : "diskpart stopped with an error. " + result.Explain());
+            Append($"Exit code {result.CodeText}");
+            Finish(result.Succeeded, result.Succeeded ? "Done." : result.Explain());
         }
         catch (OperationCanceledException)
         {
-            Finish(false, "Stopped. The disk has no partitions left but wasn't fully zeroed.");
+            Finish(false, "Stopped. Partitions are gone, the rest wasn't zeroed.");
         }
         catch (Exception ex)
         {
             Append(ex.ToString());
-            Finish(false, "Something went wrong: " + ex.Message);
+            Finish(false, ex.Message);
         }
     }
 
@@ -177,19 +140,7 @@ public partial class PlanWindow : Window
         OutputBox.ScrollToEnd();
     }
 
-    private void Stop_Click(object sender, RoutedEventArgs e)
-    {
-        var answer = MessageBox.Show(
-            "Stop clean all now? The partitions are already gone, so the disk will be blank but not every sector will be zeroed.",
-            "Stop clean all",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-
-        if (answer == MessageBoxResult.Yes)
-        {
-            _stop?.Cancel();
-        }
-    }
+    private void Stop_Click(object sender, RoutedEventArgs e) => _stop?.Cancel();
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => Close();
 

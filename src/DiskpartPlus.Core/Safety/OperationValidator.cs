@@ -7,9 +7,8 @@ using DiskpartPlus.Core.Planning;
 namespace DiskpartPlus.Core.Safety;
 
 /// <summary>
-/// Checks whether diskpart will actually accept an operation. Catching these up front means
-/// the user gets a clear message here instead of a vague error halfway through a script.
-/// Whether something is a good idea is SafetyPolicy's job, not this one.
+/// Catches things diskpart would reject, so the user gets one clear line up front instead of an
+/// error halfway through a script. Only blockers, no nagging.
 /// </summary>
 internal static class OperationValidator
 {
@@ -17,7 +16,6 @@ internal static class OperationValidator
     private static readonly ByteSize MinimumVirtualDisk = ByteSize.FromMegabytes(3);
     private static readonly ByteSize MaximumVhd = ByteSize.FromGigabytes(2040);
     private static readonly ByteSize MaximumVhdx = ByteSize.FromTerabytes(64);
-    private static readonly ByteSize SmallestSensibleEfi = ByteSize.FromMegabytes(100);
 
     public static void Check(DiskOperation operation, PlanState state, List<PlanIssue> issues)
     {
@@ -90,7 +88,7 @@ internal static class OperationValidator
             case DetachVirtualDisk detach:
                 if (CheckPath(detach, state, issues) && state.Snapshot.FindVirtualDisk(detach.FilePath) is null)
                 {
-                    issues.Add(Blocker(IssueCodes.NotAttached, $"{detach.FilePath} isn't attached.", detach));
+                    issues.Add(Blocker(IssueCodes.NotAttached, "Not attached.", detach));
                 }
 
                 break;
@@ -102,7 +100,7 @@ internal static class OperationValidator
         var disk = state.ResolveDisk(operation, issues);
         if (disk is { IsOffline: true })
         {
-            issues.Add(Blocker(IssueCodes.DiskOffline, $"Disk {disk.Number} is offline. Bring it online first.", operation));
+            issues.Add(Blocker(IssueCodes.DiskOffline, $"Disk {disk.Number} is offline.", operation));
         }
 
         return disk;
@@ -113,7 +111,7 @@ internal static class OperationValidator
         var disk = CheckOnlineDisk(operation, state, issues);
         if (disk is { IsReadOnly: true })
         {
-            issues.Add(Blocker(IssueCodes.DiskReadOnly, $"Disk {disk.Number} is read-only. Clear the read-only flag first.", operation));
+            issues.Add(Blocker(IssueCodes.DiskReadOnly, $"Disk {disk.Number} is read-only.", operation));
         }
 
         return disk;
@@ -129,7 +127,7 @@ internal static class OperationValidator
     {
         if (convert.To is not (PartitionStyle.Gpt or PartitionStyle.Mbr))
         {
-            issues.Add(Blocker(IssueCodes.InvalidStyle, "A disk can only be set up as GPT or MBR.", convert));
+            issues.Add(Blocker(IssueCodes.InvalidStyle, "Pick GPT or MBR.", convert));
             return;
         }
 
@@ -142,7 +140,7 @@ internal static class OperationValidator
         if (!state.IsEmpty(disk))
         {
             issues.Add(Blocker(IssueCodes.DiskNotEmpty,
-                $"Disk {disk.Number} still has partitions. diskpart can only convert an empty disk, so clean it first.", convert));
+                $"Disk {disk.Number} has partitions. Clean it first.", convert));
         }
         else if (state.StyleOf(disk) == convert.To)
         {
@@ -173,11 +171,11 @@ internal static class OperationValidator
         {
             var expected = style switch
             {
-                PartitionStyle.Gpt => "a GUID, like 6F1C2D3E-1A2B-4C5D-8E9F-0A1B2C3D4E5F",
-                PartitionStyle.Mbr => "8 hex digits, like 1A2B3C4D",
-                _ => "to be set up as GPT or MBR first",
+                PartitionStyle.Gpt => "a GUID",
+                PartitionStyle.Mbr => "8 hex digits",
+                _ => "to be GPT or MBR first",
             };
-            issues.Add(Blocker(IssueCodes.InvalidDiskId, $"That ID won't work. Disk {disk.Number} needs {expected}.", uniqueId));
+            issues.Add(Blocker(IssueCodes.InvalidDiskId, $"Disk {disk.Number} needs {expected}.", uniqueId));
         }
     }
 
@@ -192,12 +190,7 @@ internal static class OperationValidator
         var style = state.StyleOf(disk);
         if (create.Kind is NewPartitionKind.Efi or NewPartitionKind.MicrosoftReserved && style != PartitionStyle.Gpt)
         {
-            issues.Add(Blocker(IssueCodes.GptOnly, $"EFI and Microsoft reserved partitions need a GPT disk. Disk {disk.Number} isn't GPT.", create));
-        }
-        else if (style == PartitionStyle.Raw)
-        {
-            issues.Add(Info(IssueCodes.WillBecomeMbr,
-                $"Disk {disk.Number} isn't set up yet, so Windows will make it MBR. Add a GPT step first if you want GPT.", create));
+            issues.Add(Blocker(IssueCodes.GptOnly, "EFI and MSR partitions need a GPT disk.", create));
         }
 
         var free = state.FreeSpaceOn(disk);
@@ -205,21 +198,16 @@ internal static class OperationValidator
         {
             if (size.WholeMegabytes < 1)
             {
-                issues.Add(Blocker(IssueCodes.TooSmall, "A partition has to be at least 1 MB.", create));
+                issues.Add(Blocker(IssueCodes.TooSmall, "Minimum is 1 MB.", create));
             }
             else if (size > free)
             {
-                issues.Add(Blocker(IssueCodes.NotEnoughSpace, $"There's only {free} free on disk {disk.Number}.", create));
-            }
-
-            if (create.Kind == NewPartitionKind.Efi && size < SmallestSensibleEfi)
-            {
-                issues.Add(Warning(IssueCodes.TooSmall, "EFI partitions are normally at least 100 MB. Smaller ones can fail to boot.", create));
+                issues.Add(Blocker(IssueCodes.NotEnoughSpace, $"Only {free} free.", create));
             }
         }
         else if (free.WholeMegabytes < 1)
         {
-            issues.Add(Blocker(IssueCodes.NotEnoughSpace, $"There's no free space left on disk {disk.Number}.", create));
+            issues.Add(Blocker(IssueCodes.NotEnoughSpace, $"No free space on disk {disk.Number}.", create));
         }
 
         if (create.Format is not null)
@@ -229,7 +217,7 @@ internal static class OperationValidator
 
         if (create.Assign?.Letter is { } letter && state.IsLetterTaken(letter))
         {
-            issues.Add(Blocker(IssueCodes.LetterInUse, $"{letter.WithColon} is already in use.", create));
+            issues.Add(Blocker(IssueCodes.LetterInUse, $"{letter.WithColon} is taken.", create));
         }
     }
 
@@ -242,12 +230,6 @@ internal static class OperationValidator
         }
 
         CheckFormatSpec(format.Format, partition.Size, format, state, issues);
-
-        if (!partition.Type.IsDataPartition)
-        {
-            issues.Add(Warning(IssueCodes.NonDataPartition,
-                $"This is a {partition.Type.Name} partition, not a normal data partition. Formatting it usually isn't what you want.", format));
-        }
     }
 
     private static void CheckFormatSpec(FormatSpec spec, ByteSize size, DiskOperation operation, PlanState state, List<PlanIssue> issues)
@@ -255,14 +237,14 @@ internal static class OperationValidator
         var fs = spec.FileSystem;
         if (!fs.CanFormatTo())
         {
-            issues.Add(Blocker(IssueCodes.CantFormatTo, "Pick NTFS, exFAT, FAT32, FAT or ReFS.", operation));
+            issues.Add(Blocker(IssueCodes.CantFormatTo, "Can't format to that.", operation));
             return;
         }
 
         if (spec.Label.Length > fs.MaxLabelLength())
         {
             issues.Add(Blocker(IssueCodes.LabelTooLong,
-                $"{fs.DisplayName()} labels can be at most {fs.MaxLabelLength()} characters.", operation));
+                $"{fs.DisplayName()} labels are {fs.MaxLabelLength()} characters max.", operation));
         }
 
         if (fs.FindBadLabelChar(spec.Label) is { } bad)
@@ -273,19 +255,13 @@ internal static class OperationValidator
         else if (!state.Context.ScriptCanHold(spec.Label))
         {
             issues.Add(Blocker(IssueCodes.UnsupportedCharacters,
-                "diskpart can't take some of the characters in that label with this PC's language settings. Try plain letters and numbers.", operation));
+                "diskpart can't handle some characters in that label on this PC.", operation));
         }
 
         if (fs == FileSystemKind.Fat32 && size > Fat32FormatLimit)
         {
             issues.Add(Blocker(IssueCodes.Fat32TooLarge,
-                "Windows won't format FAT32 bigger than 32 GB. Use exFAT instead. It works on Windows and macOS too.", operation));
-        }
-
-        if (fs == FileSystemKind.Refs)
-        {
-            issues.Add(Info(IssueCodes.RefsEdition,
-                "ReFS formatting isn't available on every edition of Windows. If it fails, use NTFS.", operation));
+                "Windows won't format FAT32 over 32 GB. Use exFAT.", operation));
         }
     }
 
@@ -300,7 +276,7 @@ internal static class OperationValidator
         if (partition.FileSystem is not (FileSystemKind.Ntfs or FileSystemKind.Refs or FileSystemKind.None))
         {
             issues.Add(Blocker(IssueCodes.UnsupportedFileSystem,
-                $"diskpart can only grow NTFS or ReFS partitions. This one is {partition.FileSystem.DisplayName()}.", extend));
+                "Only NTFS and ReFS can be extended.", extend));
         }
 
         // The free space has to come straight after the partition.
@@ -309,11 +285,11 @@ internal static class OperationValidator
 
         if (room.WholeMegabytes < 1)
         {
-            issues.Add(Blocker(IssueCodes.NoSpaceAfter, "There's no free space right after this partition to grow into.", extend));
+            issues.Add(Blocker(IssueCodes.NoSpaceAfter, "No free space right after this partition.", extend));
         }
         else if (extend.By is { } by && by > room)
         {
-            issues.Add(Blocker(IssueCodes.NotEnoughSpace, $"There's only {room} free right after this partition.", extend));
+            issues.Add(Blocker(IssueCodes.NotEnoughSpace, $"Only {room} free after it.", extend));
         }
     }
 
@@ -328,23 +304,18 @@ internal static class OperationValidator
         if (partition.FileSystem != FileSystemKind.Ntfs)
         {
             issues.Add(Blocker(IssueCodes.UnsupportedFileSystem,
-                $"diskpart can only shrink NTFS partitions. This one is {partition.FileSystem.DisplayName()}.", shrink));
+                "Only NTFS can be shrunk.", shrink));
             return;
         }
 
         if (shrink.By.WholeMegabytes < 1)
         {
-            issues.Add(Blocker(IssueCodes.TooSmall, "Shrink by at least 1 MB.", shrink));
+            issues.Add(Blocker(IssueCodes.TooSmall, "Minimum is 1 MB.", shrink));
         }
         else if (partition.Volume is { } volume && shrink.By >= volume.FreeSpace)
         {
             issues.Add(Blocker(IssueCodes.NotEnoughSpace,
-                $"Only {volume.FreeSpace} is free on this partition, so it can't shrink by {shrink.By}.", shrink));
-        }
-        else
-        {
-            issues.Add(Info(IssueCodes.ShrinkLimit,
-                "Windows can't move some system files, so it may not be able to shrink this far. If so, nothing changes.", shrink));
+                $"Only {volume.FreeSpace} free on it.", shrink));
         }
     }
 
@@ -360,24 +331,18 @@ internal static class OperationValidator
         {
             if (partition.Letter != old)
             {
-                issues.Add(Blocker(IssueCodes.LetterMismatch, $"This partition doesn't have {old.WithColon}.", assign));
+                issues.Add(Blocker(IssueCodes.LetterMismatch, $"It doesn't have {old.WithColon}.", assign));
             }
         }
         else if (partition.Letter is { } existing)
         {
             issues.Add(Blocker(IssueCodes.AlreadyHasLetter,
-                $"This partition already has {existing.WithColon}. Change that letter instead.", assign));
+                $"Already has {existing.WithColon}.", assign));
         }
 
         if (assign.Letter is { } letter && letter != assign.Replacing && state.IsLetterTaken(letter))
         {
-            issues.Add(Blocker(IssueCodes.LetterInUse, $"{letter.WithColon} is already in use.", assign));
-        }
-
-        if (!partition.Type.IsDataPartition)
-        {
-            issues.Add(Warning(IssueCodes.NonDataPartition,
-                $"This is a {partition.Type.Name} partition. Giving it a drive letter is usually a bad idea.", assign));
+            issues.Add(Blocker(IssueCodes.LetterInUse, $"{letter.WithColon} is taken.", assign));
         }
     }
 
@@ -386,7 +351,7 @@ internal static class OperationValidator
         var partition = CheckWritablePartition(remove, state, issues);
         if (partition is not null && partition.Letter != remove.Letter)
         {
-            issues.Add(Blocker(IssueCodes.LetterMismatch, $"This partition doesn't have {remove.Letter.WithColon}.", remove));
+            issues.Add(Blocker(IssueCodes.LetterMismatch, $"It doesn't have {remove.Letter.WithColon}.", remove));
         }
     }
 
@@ -402,7 +367,7 @@ internal static class OperationValidator
         if (setType.Type.DiskpartId(style) is null)
         {
             issues.Add(Blocker(IssueCodes.TypeDoesNotFitDisk,
-                $"{setType.Type.Name} can't be used on a {Style(style)} disk.", setType));
+                $"{setType.Type.Name} isn't valid on a {Style(style)} disk.", setType));
         }
     }
 
@@ -411,7 +376,7 @@ internal static class OperationValidator
         var partition = CheckWritablePartition(attributes, state, issues);
         if (partition is not null && state.Snapshot.FindDisk(attributes.DiskNumber) is { } disk && state.StyleOf(disk) != PartitionStyle.Gpt)
         {
-            issues.Add(Blocker(IssueCodes.GptOnly, "GPT attributes only exist on GPT disks.", attributes));
+            issues.Add(Blocker(IssueCodes.GptOnly, "GPT disks only.", attributes));
         }
     }
 
@@ -425,7 +390,7 @@ internal static class OperationValidator
         if (state.Context.FileExists(create.FilePath))
         {
             issues.Add(Blocker(IssueCodes.FileExists,
-                $"{create.FilePath} already exists. Pick a new name so nothing gets overwritten.", create));
+                $"{create.FilePath} already exists.", create));
         }
 
         var isVhdx = create.FilePath.EndsWith(".vhdx", StringComparison.OrdinalIgnoreCase);
@@ -433,32 +398,26 @@ internal static class OperationValidator
 
         if (create.MaximumSize < MinimumVirtualDisk)
         {
-            issues.Add(Blocker(IssueCodes.TooSmall, "A virtual disk has to be at least 3 MB.", create));
+            issues.Add(Blocker(IssueCodes.TooSmall, "Minimum is 3 MB.", create));
         }
         else if (create.MaximumSize > limit)
         {
             issues.Add(Blocker(IssueCodes.VirtualDiskTooBig,
-                isVhdx ? "VHDX files can be at most 64 TB." : "VHD files can be at most 2040 GB. Use .vhdx for anything bigger.", create));
-        }
-
-        if (create.Allocation == VirtualDiskAllocation.Fixed)
-        {
-            issues.Add(Info(IssueCodes.FixedVirtualDisk,
-                $"A fixed disk takes up the full {create.MaximumSize} straight away. Creating it can take a while.", create));
+                isVhdx ? "VHDX max is 64 TB." : "VHD max is 2040 GB. Use .vhdx.", create));
         }
 
         if (create.Setup is { } setup)
         {
             if (setup.Style is not (PartitionStyle.Gpt or PartitionStyle.Mbr))
             {
-                issues.Add(Blocker(IssueCodes.InvalidStyle, "A disk can only be set up as GPT or MBR.", create));
+                issues.Add(Blocker(IssueCodes.InvalidStyle, "Pick GPT or MBR.", create));
             }
 
             CheckFormatSpec(setup.Format, create.MaximumSize, create, state, issues);
 
             if (setup.Assign?.Letter is { } letter && state.IsLetterTaken(letter))
             {
-                issues.Add(Blocker(IssueCodes.LetterInUse, $"{letter.WithColon} is already in use.", create));
+                issues.Add(Blocker(IssueCodes.LetterInUse, $"{letter.WithColon} is taken.", create));
             }
         }
     }
@@ -472,11 +431,11 @@ internal static class OperationValidator
 
         if (!state.Context.FileExists(attach.FilePath))
         {
-            issues.Add(Blocker(IssueCodes.FileMissing, $"Can't find {attach.FilePath}.", attach));
+            issues.Add(Blocker(IssueCodes.FileMissing, $"{attach.FilePath} not found.", attach));
         }
         else if (state.Snapshot.FindVirtualDisk(attach.FilePath) is { } disk)
         {
-            issues.Add(Blocker(IssueCodes.AlreadyAttached, $"{attach.FilePath} is already attached as disk {disk.Number}.", attach));
+            issues.Add(Blocker(IssueCodes.AlreadyAttached, $"Already attached as disk {disk.Number}.", attach));
         }
     }
 
@@ -497,12 +456,12 @@ internal static class OperationValidator
             }
 
             issues.Add(Blocker(IssueCodes.UnsupportedCharacters,
-                "diskpart can't take some of the characters in that path with this PC's language settings. Pick a folder with a plain name, like C:\\VMs.", operation));
+                "diskpart can't handle some characters in that path on this PC.", operation));
             return false;
         }
 
         issues.Add(Blocker(IssueCodes.InvalidPath,
-            "Use a full path ending in .vhd or .vhdx, like C:\\VMs\\test.vhdx.", operation));
+            "Needs a full path ending in .vhd or .vhdx.", operation));
         return false;
     }
 
@@ -510,10 +469,4 @@ internal static class OperationValidator
 
     private static PlanIssue Blocker(string code, string message, DiskOperation operation) =>
         new(IssueSeverity.Blocker, code, message) { Operation = operation };
-
-    private static PlanIssue Warning(string code, string message, DiskOperation operation) =>
-        new(IssueSeverity.Warning, code, message) { Operation = operation };
-
-    private static PlanIssue Info(string code, string message, DiskOperation operation) =>
-        new(IssueSeverity.Info, code, message) { Operation = operation };
 }

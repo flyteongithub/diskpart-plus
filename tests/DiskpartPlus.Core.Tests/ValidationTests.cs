@@ -159,11 +159,10 @@ public class ValidationTests
     }
 
     [Fact]
-    public void Creating_on_a_raw_disk_says_it_will_be_mbr()
+    public void Creating_on_a_raw_disk_works()
     {
         var plan = Plan(new CleanDisk(2), new CreatePartition(2, Format: new FormatSpec(FileSystemKind.ExFat, "USB")));
 
-        Assert.Contains(plan.Issues, i => i.Code == IssueCodes.WillBecomeMbr);
         Assert.True(plan.CanRun);
     }
 
@@ -275,7 +274,7 @@ public class ValidationTests
     }
 
     [Fact]
-    public void Detaching_an_attached_disk_warns_about_its_letters()
+    public void Detaching_an_attached_disk_works()
     {
         var vhd = new DiskInfo
         {
@@ -295,6 +294,6 @@ public class ValidationTests
         var plan = OperationPlanner.Create([new DetachVirtualDisk(@"c:/vms/TEST.vhdx")], context);
 
         Assert.True(plan.CanRun);
-        Assert.Contains(plan.Issues, i => i.Code == IssueCodes.DetachInUse);
+        Assert.Empty(plan.Issues);
     }
 }

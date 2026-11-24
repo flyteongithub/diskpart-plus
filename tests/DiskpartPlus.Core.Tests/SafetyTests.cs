@@ -40,44 +40,40 @@ public class SafetyTests
     }
 
     [Fact]
-    public void Formatting_another_partition_on_the_windows_disk_is_allowed_with_a_warning()
+    public void Formatting_another_partition_on_the_windows_disk_is_allowed_without_fuss()
     {
         var plan = Plan(new FormatPartition(0, 5, new FormatSpec(FileSystemKind.Ntfs, "Data")));
 
         Assert.True(plan.CanRun);
-        Assert.True(Has(plan, IssueCodes.OnWindowsDisk, IssueSeverity.Warning));
-        Assert.True(Has(plan, IssueCodes.MountedVolume, IssueSeverity.Warning));
+        Assert.Empty(plan.Issues);
     }
 
-    [Fact]
-    public void Deleting_a_mac_efi_partition_works_but_explains_the_override()
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void Deleting_mac_partitions_just_works(int partition)
     {
-        var plan = Plan(new DeletePartition(1, 1, Override: true));
+        var plan = Plan(new DeletePartition(1, partition, Override: true));
 
         Assert.True(plan.CanRun);
         Assert.Equal(RiskLevel.Destructive, plan.Risk);
-        Assert.True(Has(plan, IssueCodes.ProtectedPartition, IssueSeverity.Warning));
+        Assert.Empty(plan.Issues);
     }
 
     [Fact]
-    public void Deleting_an_apfs_partition_mentions_that_windows_cant_read_it()
-    {
-        var plan = Plan(new DeletePartition(1, 2, Override: true));
-
-        Assert.True(plan.CanRun);
-        Assert.True(Has(plan, IssueCodes.ApplePartitions, IssueSeverity.Info));
-    }
-
-    [Fact]
-    public void Clean_all_on_an_ssd_warns_and_needs_the_stronger_phrase()
+    public void Clean_all_on_an_ssd_warns()
     {
         var plan = Plan(new CleanDisk(4, ZeroEverySector: true));
 
         Assert.True(plan.CanRun);
         Assert.Equal(RiskLevel.Critical, plan.Risk);
-        Assert.Equal("WIPE DISK 4", plan.ConfirmationPhrase);
         Assert.True(Has(plan, IssueCodes.CleanAllOnSsd, IssueSeverity.Warning));
-        Assert.True(Has(plan, IssueCodes.CleanAllSlow, IssueSeverity.Info));
+    }
+
+    [Fact]
+    public void Clean_all_on_a_hard_drive_says_nothing()
+    {
+        Assert.Empty(Plan(new CleanDisk(3, ZeroEverySector: true)).Issues);
     }
 
     [Fact]
@@ -97,12 +93,12 @@ public class SafetyTests
     }
 
     [Fact]
-    public void Removing_a_normal_letter_just_mentions_shortcuts()
+    public void Removing_a_normal_letter_is_fine()
     {
         var plan = Plan(new RemoveDriveLetter(3, 1, new DriveLetter('F')));
 
         Assert.True(plan.CanRun);
-        Assert.True(Has(plan, IssueCodes.LetterRemoval, IssueSeverity.Info));
+        Assert.Empty(plan.Issues);
     }
 
     [Theory]
@@ -132,12 +128,12 @@ public class SafetyTests
     }
 
     [Fact]
-    public void Clearing_read_only_mentions_hardware_locks()
+    public void Clearing_read_only_is_fine()
     {
         var plan = Plan(new SetDiskReadOnly(2, false));
 
         Assert.True(plan.CanRun);
-        Assert.True(Has(plan, IssueCodes.ReadOnlyHardware, IssueSeverity.Info));
+        Assert.Empty(plan.Issues);
     }
 
     [Fact]

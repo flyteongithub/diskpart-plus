@@ -16,7 +16,7 @@ public partial class App : Application
         if (!Elevation.IsAdministrator())
         {
             MessageBox.Show(
-                "Diskpart+ needs to run as administrator because diskpart does.\n\nRight-click it and choose \"Run as administrator\".",
+                "Diskpart+ needs to run as administrator.",
                 "Diskpart+",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
@@ -38,7 +38,7 @@ public partial class App : Application
     private static void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         MessageBox.Show(
-            $"Something went wrong:\n\n{e.Exception.Message}\n\nNothing was sent to diskpart because of this error.",
+            e.Exception.Message,
             "Diskpart+",
             MessageBoxButton.OK,
             MessageBoxImage.Error);

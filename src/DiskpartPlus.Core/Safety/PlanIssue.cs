@@ -26,7 +26,7 @@ public enum IssueSeverity
     Blocker,
 }
 
-/// <summary>Something the user should know about a plan or a reason it can't run.</summary>
+/// <summary>A reason a plan can't run, or the odd warning worth knowing.</summary>
 public sealed record PlanIssue(IssueSeverity Severity, string Code, string Message)
 {
     /// <summary>The operation this is about, if it's about one in particular.</summary>
@@ -51,7 +51,6 @@ public static class IssueCodes
     public const string AlreadyThatStyle = "already-that-style";
     public const string InvalidStyle = "invalid-style";
     public const string GptOnly = "gpt-only";
-    public const string WillBecomeMbr = "will-become-mbr";
     public const string NotEnoughSpace = "not-enough-space";
     public const string NoSpaceAfter = "no-space-after";
     public const string TooSmall = "too-small";
@@ -61,7 +60,6 @@ public static class IssueCodes
     public const string LabelBadCharacter = "label-bad-character";
     public const string UnsupportedCharacters = "unsupported-characters";
     public const string Fat32TooLarge = "fat32-too-large";
-    public const string RefsEdition = "refs-edition";
     public const string LetterInUse = "letter-in-use";
     public const string AlreadyHasLetter = "already-has-letter";
     public const string LetterMismatch = "letter-mismatch";
@@ -73,24 +71,12 @@ public static class IssueCodes
     public const string VirtualDiskTooBig = "virtual-disk-too-big";
     public const string AlreadyAttached = "already-attached";
     public const string NotAttached = "not-attached";
-    public const string ShrinkLimit = "shrink-limit";
-    public const string FixedVirtualDisk = "fixed-virtual-disk";
     public const string EmptyPlan = "empty-plan";
     public const string ScriptError = "script-error";
 
     // Safety
     public const string CriticalDisk = "critical-disk";
     public const string CriticalPartition = "critical-partition";
-    public const string OnWindowsDisk = "on-windows-disk";
-    public const string ProtectedPartition = "protected-partition";
-    public const string ApplePartitions = "apple-partitions";
-    public const string BitLocker = "bitlocker";
-    public const string MountedVolume = "mounted-volume";
     public const string CleanAllOnSsd = "clean-all-on-ssd";
-    public const string CleanAllSlow = "clean-all-slow";
     public const string MultipleDisks = "multiple-disks";
-    public const string NonDataPartition = "non-data-partition";
-    public const string LetterRemoval = "letter-removal";
-    public const string ReadOnlyHardware = "read-only-hardware";
-    public const string DetachInUse = "detach-in-use";
 }

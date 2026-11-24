@@ -14,7 +14,7 @@ Diskpart+ is split so the risky part (deciding what to run) can be tested proper
           ▼
    OperationPlan          issues + risk + confirmation phrase + script + target fingerprints
           │
-          │   user reads the plan and types the confirmation phrase
+          │   destructive plans: one review screen; everything else runs straight away
           ▼
    Last-minute check      read the disks again, make sure disk N is still the same drive
           │
@@ -63,22 +63,22 @@ A few rules the builder sticks to:
 Each step goes through two checks:
 
 - **`OperationValidator`** asks "will diskpart accept this?" FAT32 over 32 GB, labels too long for the file system, a drive letter already in use, converting a disk that still has partitions and so on.
-- **`SafetyPolicy`** asks "is this a good idea?" It blocks anything destructive on critical disks and warns about things like BitLocker volumes, mounted drives or running `clean all` on an SSD.
+- **`SafetyPolicy`** blocks anything destructive on critical disks. Apart from one warning about `clean all` on an SSD, it stays quiet. People using this know what diskpart does.
 
 Every issue has a stable code (see `IssueCodes`) so tests and translations don't depend on message text.
 
 ### Risk levels
 
-| Level | Examples | Confirmation |
+| Level | Examples | In the app |
 |---|---|---|
-| Safe | Assign a letter, attach a VHD | none |
-| Caution | Shrink, take a disk offline, convert an empty disk | none |
-| Destructive | Format, delete a partition, `clean` | type `ERASE DISK n` |
-| Critical | `clean all` | type `WIPE DISK n` |
+| Safe | Assign a letter, attach a VHD | runs straight away |
+| Caution | Shrink, take a disk offline, convert an empty disk | runs straight away |
+| Destructive | Format, delete a partition, `clean` | one review screen, "Erase disk n" button |
+| Critical | `clean all` | one review screen, "Wipe disk n" button |
 
 ### What counts as critical
 
-A disk is critical if it holds the running copy of Windows, the system (EFI) partition the PC booted from, the page file or Diskpart+ itself. Destructive changes to a critical disk are blocked with no way round it. Partitions on a critical disk that aren't critical themselves (a D: drive on the same SSD as C:, say) are allowed with a warning.
+A disk is critical if it holds the running copy of Windows, the system (EFI) partition the PC booted from, the page file or Diskpart+ itself. Destructive changes to a critical disk are blocked. Partitions on a critical disk that aren't critical themselves (a D: drive on the same SSD as C:, say) are fine.
 
 ### Same drive check
 

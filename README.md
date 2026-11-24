@@ -60,16 +60,14 @@ Diskpart+ puts a proper interface on top of diskpart.
 
 **The app**
 - Fluent design with light and dark themes that follow Windows
-- Live diskpart output plus the exact script for every change
+- Live diskpart output and the exact script for every change
 
-## How it keeps your data safe
+## Safety without the hand-holding
 
-- **You see the script first.** Every action becomes a plan that shows what will change, how risky it is and the exact diskpart commands. Nothing runs until you've looked at it.
-- **It won't touch your Windows disk.** Wiping, converting or taking offline the disk Windows runs or boots from, the disk with the page file or the disk Diskpart+ is running from is blocked outright. There's no override for that.
-- **You type to confirm.** Anything that erases data asks you to type something like `ERASE DISK 2` first.
-- **It checks it's still the same drive.** Disk numbers can change when you plug things in or take them out. Right before running, Diskpart+ reads your disks again and refuses to carry on if disk 2 isn't the drive you picked.
-- **It catches mistakes early.** FAT32 over 32 GB, labels that are too long, letters already in use, converting a disk that isn't empty. All of these get flagged before diskpart even starts.
-- **One disk at a time.** A single plan can't erase data on more than one disk.
+- **One look before anything is erased.** Format, delete and clean show the steps and the exact script, with a button that says what it does ("Erase disk 2"). Everything else just runs.
+- **It won't touch your Windows disk.** Destructive changes to the disk Windows runs or boots from, the page file disk or the disk Diskpart+ runs from are blocked.
+- **It checks it's still the same drive.** Disk numbers can change when drives come and go, so Diskpart+ re-reads your disks right before running.
+- **Mistakes get caught early.** FAT32 over 32 GB, labels that are too long, letters already taken and so on are flagged in one line before diskpart starts.
 
 ## What it can't do
 
@@ -87,7 +85,7 @@ What hasn't happened yet is testing on lots of real hardware. If something looks
 
 - [x] Engine: models, safety rules, planner and script builder
 - [x] Windows layer: reads disks through the storage API and runs diskpart
-- [x] WPF app with plan review and typed confirmation
+- [x] WPF app
 - [x] First preview release
 - [ ] Code signing, so the SmartScreen warning goes away
 - [ ] Windows install layout template (EFI, MSR, Windows and recovery partitions)

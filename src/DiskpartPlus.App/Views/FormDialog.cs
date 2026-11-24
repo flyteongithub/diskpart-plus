@@ -14,7 +14,7 @@ public sealed class FormDialog : Window
     private readonly StackPanel _fields = new();
     private readonly TextBlock _error = new() { Foreground = Palette.Danger, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0), Visibility = Visibility.Collapsed };
 
-    public FormDialog(Window? owner, string title, string intro, string continueText = "Continue")
+    public FormDialog(Window? owner, string title, string? intro = null, string continueText = "OK")
     {
         Title = title;
         Owner = owner;
@@ -34,7 +34,14 @@ public sealed class FormDialog : Window
 
         var root = new StackPanel { Margin = new Thickness(24) };
         root.Children.Add(new TextBlock { Text = title, Style = (Style)FindResource("HeaderText"), Margin = new Thickness(0, 0, 0, 6) });
-        root.Children.Add(new TextBlock { Text = intro, Style = (Style)FindResource("CaptionText"), Margin = new Thickness(0, 0, 0, 12) });
+        if (!string.IsNullOrEmpty(intro))
+        {
+            root.Children.Add(new TextBlock { Text = intro, Style = (Style)FindResource("CaptionText"), Margin = new Thickness(0, 0, 0, 12) });
+        }
+        else
+        {
+            root.Children[0].SetValue(MarginProperty, new Thickness(0, 0, 0, 14));
+        }
         root.Children.Add(_fields);
         root.Children.Add(_error);
         root.Children.Add(buttons);

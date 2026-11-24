@@ -64,7 +64,7 @@ internal sealed class PlanState(PlanningContext context)
         if (disk is null)
         {
             issues?.Add(new PlanIssue(IssueSeverity.Blocker, IssueCodes.DiskNotFound,
-                $"There's no disk {operation.DiskNumber}. Refresh the disk list and try again.") { Operation = operation });
+                $"Disk {operation.DiskNumber} not found. Refresh.") { Operation = operation });
         }
 
         return disk;
@@ -85,7 +85,7 @@ internal sealed class PlanState(PlanningContext context)
         if (WasCleaned(disk.Number) || _deletedPartitions.Contains((disk.Number, operation.PartitionNumber)))
         {
             issues?.Add(new PlanIssue(IssueSeverity.Blocker, IssueCodes.PartitionGone,
-                $"Partition {operation.PartitionNumber} on disk {disk.Number} will already be gone by this step.") { Operation = operation });
+                $"Partition {operation.PartitionNumber} is already gone by this step.") { Operation = operation });
             return null;
         }
 

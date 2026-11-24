@@ -48,7 +48,7 @@ internal static class UiSnapshot
                     WipeAndReuse.Build(disk.Number),
                     new PlanningContext(snapshot) { FileExists = File.Exists, ScriptCanHold = DiskpartRunner.CanHold });
 
-                var review = new PlanWindow(plan, new DiskpartRunner(), new CimStorageInventory()) { Owner = main };
+                var review = new PlanWindow(plan, new DiskpartRunner(), new CimStorageInventory(), disk.Disk.DisplayName) { Owner = main };
                 review.Show();
                 await Settle(review);
                 await SaveAt(review, 760, 640, Path.Combine(folder, "review-light.png"));

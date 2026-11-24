@@ -10,26 +10,23 @@ namespace DiskpartPlus.Core.Tests;
 public class PlannerTests
 {
     [Fact]
-    public void Safe_plans_dont_ask_for_confirmation()
+    public void Safe_plans_run_without_a_review()
     {
         var plan = OperationPlanner.Create([new AssignDriveLetter(3, 2)], TestDisks.Context());
 
         Assert.True(plan.CanRun);
         Assert.Equal(RiskLevel.Safe, plan.Risk);
-        Assert.False(plan.RequiresConfirmation);
-        Assert.True(plan.IsConfirmedBy(null));
+        Assert.False(plan.NeedsReview);
+        Assert.Null(plan.ErasedDisk);
     }
 
     [Fact]
-    public void Destructive_plans_ask_the_user_to_type_the_disk()
+    public void Destructive_plans_get_a_review_naming_the_disk()
     {
         var plan = OperationPlanner.Create(WipeAndReuse.Build(1), TestDisks.Context());
 
-        Assert.Equal("ERASE DISK 1", plan.ConfirmationPhrase);
-        Assert.True(plan.IsConfirmedBy("erase  disk 1 "));
-        Assert.False(plan.IsConfirmedBy("ERASE DISK 2"));
-        Assert.False(plan.IsConfirmedBy("yes"));
-        Assert.False(plan.IsConfirmedBy(null));
+        Assert.True(plan.NeedsReview);
+        Assert.Equal(1, plan.ErasedDisk);
     }
 
     [Fact]
@@ -88,7 +85,7 @@ public class PlannerTests
 
         var problems = plan.CheckTargetsStillMatch(TestDisks.Snapshot(TestDisks.WindowsDisk));
 
-        Assert.Contains("disappeared", Assert.Single(problems));
+        Assert.Contains("is gone", Assert.Single(problems));
     }
 
     [Fact]

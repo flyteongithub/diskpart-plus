@@ -85,7 +85,7 @@
 
             <!-- Nothing selected -->
             <TextBlock Grid.Column="2"
-                       Text="Pick a disk on the left."
+                       Text="Pick a disk."
                        Style="{StaticResource CaptionText}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
@@ -217,7 +217,7 @@
                                     <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" Width="1.5*" MinWidth="120" />
                                 </DataGrid.Columns>
                             </DataGrid>
-                            <TextBlock Text="No partitions on this disk."
+                            <TextBlock Text="No partitions."
                                        Style="{StaticResource CaptionText}"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
@@ -241,7 +241,7 @@
         </Grid>
 
         <!-- diskpart output -->
-        <Expander Grid.Row="2" Header="diskpart output" Margin="0,12,0,0">
+        <Expander Grid.Row="2" Header="diskpart output" Margin="0,12,0,0" IsExpanded="{Binding IsLogExpanded, Mode=TwoWay}">
             <TextBox Text="{Binding LogText, Mode=OneWay}"
                      IsReadOnly="True"
                      FontFamily="{StaticResource MonoFont}"
@@ -255,7 +255,7 @@
 
         <!-- Status bar -->
         <DockPanel Grid.Row="3" Margin="2,10,2,0">
-            <TextBlock DockPanel.Dock="Right" Text="Running as administrator · made by flyte" Style="{StaticResource CaptionText}" />
+            <TextBlock DockPanel.Dock="Right" Text="flyte" Style="{StaticResource CaptionText}" />
             <TextBlock Text="{Binding Status}" Style="{StaticResource CaptionText}" />
         </DockPanel>
     </Grid>

@@ -11,6 +11,7 @@ using DiskpartPlus.Core.Execution;
 using DiskpartPlus.Core.Models;
 using DiskpartPlus.Core.Operations;
 using DiskpartPlus.Core.Planning;
+using DiskpartPlus.Core.Safety;
 using DiskpartPlus.Windows.Execution;
 
 namespace DiskpartPlus.App.ViewModels;
@@ -30,6 +31,7 @@ public sealed class MainViewModel : ObservableObject
     private SegmentViewModel? _selectedSegment;
     private string _status = "Reading disks...";
     private bool _isBusy;
+    private bool _isLogExpanded;
 
     public MainViewModel(IStorageInventory inventory, IDiskpartRunner runner, Func<Window> owner)
     {
@@ -133,6 +135,12 @@ public sealed class MainViewModel : ObservableObject
 
     public string LogText => _log.ToString();
 
+    public bool IsLogExpanded
+    {
+        get => _isLogExpanded;
+        set => SetProperty(ref _isLogExpanded, value);
+    }
+
     public string VersionText
     {
         get
@@ -191,12 +199,12 @@ public sealed class MainViewModel : ObservableObject
                 SelectedPartition = SelectedDisk?.Partitions.FirstOrDefault(p => p.Number == number);
             }
 
-            Status = $"{Disks.Count} disk{(Disks.Count == 1 ? string.Empty : "s")} found. Last checked {DateTime.Now:HH:mm:ss}.";
+            Status = $"{Disks.Count} disk{(Disks.Count == 1 ? string.Empty : "s")}";
         }
         catch (Exception ex)
         {
             Status = "Couldn't read the disks.";
-            MessageBox.Show($"Couldn't read the list of disks:\n\n{ex.Message}", "Diskpart+", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, "Diskpart+", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally
         {
@@ -216,6 +224,8 @@ public sealed class MainViewModel : ObservableObject
                 : Task.CompletedTask,
             () => !IsBusy && _snapshot is not null && SelectedPartition is { } p && (extra?.Invoke(p.Partition) ?? true));
 
+    // Blocked plans get one line saying why. Anything that erases data gets one look before
+    // it runs. Everything else just runs.
     private async Task ReviewAndRunAsync(IReadOnlyList<DiskOperation>? operations)
     {
         if (operations is null || operations.Count == 0 || _snapshot is null)
@@ -224,18 +234,28 @@ public sealed class MainViewModel : ObservableObject
         }
 
         var plan = OperationPlanner.Create(operations, new PlanningContext(_snapshot) { FileExists = File.Exists, ScriptCanHold = DiskpartRunner.CanHold });
-        var window = new PlanWindow(plan, _runner, _inventory) { Owner = _owner() };
+
+        if (!plan.CanRun)
+        {
+            var reasons = plan.Issues.Where(i => i.Severity == IssueSeverity.Blocker).Select(i => i.Message);
+            MessageBox.Show(string.Join("\n", reasons), "Diskpart+", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (!plan.NeedsReview)
+        {
+            await RunNowAsync(plan);
+            return;
+        }
+
+        var diskName = plan.ErasedDisk is { } number ? _snapshot.FindDisk(number)?.DisplayName : null;
+        var window = new PlanWindow(plan, _runner, _inventory, diskName) { Owner = _owner() };
         window.ShowDialog();
 
-        if (window.Output.Count > 0)
+        StartLogEntry();
+        foreach (var line in window.Output)
         {
-            _log.AppendLine($"--- {DateTime.Now:HH:mm:ss} ---");
-            foreach (var line in window.Output)
-            {
-                _log.AppendLine(line);
-            }
-
-            OnPropertyChanged(nameof(LogText));
+            AppendLog(line);
         }
 
         if (window.Ran)
@@ -244,11 +264,69 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    private async Task RunNowAsync(OperationPlan plan)
+    {
+        IsBusy = true;
+        Status = "Running...";
+        string? problem = null;
+
+        try
+        {
+            var changed = plan.CheckTargetsStillMatch(await _inventory.GetSnapshotAsync());
+            if (changed.Count > 0)
+            {
+                problem = string.Join("\n", changed);
+            }
+            else
+            {
+                StartLogEntry();
+                foreach (var line in plan.Script!.Commands)
+                {
+                    AppendLog("> " + line);
+                }
+
+                var result = await _runner.RunAsync(plan.Script, new UiLog(AppendLog));
+                AppendLog($"Exit code {result.CodeText}");
+                if (!result.Succeeded)
+                {
+                    problem = result.Explain();
+                }
+            }
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+
+        await RefreshAsync();
+        Status = problem is null ? "Done." : "Failed.";
+
+        if (problem is not null)
+        {
+            IsLogExpanded = true;
+            MessageBox.Show(problem, "Diskpart+", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void StartLogEntry() => AppendLog($"--- {DateTime.Now:HH:mm:ss} ---");
+
+    private void AppendLog(string line)
+    {
+        _log.AppendLine(line);
+        OnPropertyChanged(nameof(LogText));
+    }
+
+    /// <summary>Hands each output line to the UI thread straight away, so lines stay in order.</summary>
+    private sealed class UiLog(Action<string> write) : IProgress<string>
+    {
+        public void Report(string value) => Application.Current.Dispatcher.Invoke(() => write(value));
+    }
+
     private void ShowAbout()
     {
         var answer = MessageBox.Show(
-            $"Diskpart+ {VersionText}\n\nA modern, safe GUI for Windows diskpart.\nMade by flyte.\n\nOpen source under the MIT licence. Not affiliated with Microsoft.\n\nOpen the project page on GitHub?",
-            "About Diskpart+",
+            $"Diskpart+ {VersionText} by flyte\nMIT licence\n\nOpen GitHub?",
+            "About",
             MessageBoxButton.YesNo,
             MessageBoxImage.Information);
 

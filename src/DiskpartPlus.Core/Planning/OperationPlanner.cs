@@ -22,7 +22,7 @@ public static class OperationPlanner
 
         if (list.Count == 0)
         {
-            issues.Add(new PlanIssue(IssueSeverity.Blocker, IssueCodes.EmptyPlan, "There's nothing to do yet."));
+            issues.Add(new PlanIssue(IssueSeverity.Blocker, IssueCodes.EmptyPlan, "Nothing to do."));
         }
 
         foreach (var operation in list)
