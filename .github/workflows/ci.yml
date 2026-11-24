@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
 
 permissions:
@@ -11,6 +11,11 @@ permissions:
 jobs:
   build-and-test:
     runs-on: windows-latest
+
+    env:
+      # Lets the real diskpart tests run. They only ever touch throwaway VHDX files in the temp folder.
+      DISKPARTPLUS_INTEGRATION: '1'
+      DOTNET_NOLOGO: '1'
 
     steps:
       - uses: actions/checkout@v7
@@ -25,5 +30,21 @@ jobs:
       - name: Build
         run: dotnet build DiskpartPlus.slnx --configuration Release --no-restore
 
-      - name: Test
-        run: dotnet test DiskpartPlus.slnx --configuration Release --no-build --verbosity normal
+      - name: Engine tests
+        run: dotnet test tests/DiskpartPlus.Core.Tests --configuration Release --no-build
+
+      - name: Real diskpart tests on throwaway virtual disks
+        run: dotnet test tests/DiskpartPlus.Windows.Tests --configuration Release --no-build --logger "console;verbosity=detailed"
+
+      - name: Publish the app
+        run: >
+          dotnet publish src/DiskpartPlus.App/DiskpartPlus.App.csproj
+          --configuration Release --runtime win-x64 --self-contained
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true -p:DebugType=none
+          --output publish/win-x64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DiskpartPlus-win-x64
+          path: publish/win-x64/DiskpartPlus.exe
