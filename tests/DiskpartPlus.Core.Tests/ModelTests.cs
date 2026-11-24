@@ -68,6 +68,21 @@ public class DriveLetterTests
     }
 }
 
+public class SnapshotTests
+{
+    [Fact]
+    public void Available_letters_skip_ones_in_use()
+    {
+        var letters = TestDisks.Snapshot().AvailableLetters().Select(l => l.Value).ToList();
+
+        Assert.DoesNotContain('C', letters);
+        Assert.DoesNotContain('E', letters);
+        Assert.Contains('H', letters);
+        Assert.DoesNotContain('A', letters);
+        Assert.Equal('Z', letters[^1]);
+    }
+}
+
 public class FileSystemTests
 {
     [Theory]

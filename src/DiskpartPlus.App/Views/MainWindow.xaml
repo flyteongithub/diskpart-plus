@@ -1,0 +1,255 @@
+<Window x:Class="DiskpartPlus.App.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DiskpartPlus.App.Controls"
+        xmlns:vm="clr-namespace:DiskpartPlus.App.ViewModels"
+        Title="Diskpart+"
+        Width="1240" Height="820" MinWidth="980" MinHeight="640"
+        WindowStartupLocation="CenterScreen"
+        Icon="/Assets/DiskpartPlus.ico">
+
+    <Grid Margin="20,12,20,12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Top bar -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,16" LastChildFill="False">
+            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                <Image Source="/Assets/DiskpartPlus.png" Width="32" Height="32" Margin="0,0,12,0" RenderOptions.BitmapScalingMode="HighQuality" />
+                <TextBlock Text="Diskpart+" Style="{StaticResource AppTitleText}" />
+                <TextBlock Text="{Binding VersionText}" Style="{StaticResource CaptionText}" VerticalAlignment="Center" Margin="10,4,0,0" />
+            </StackPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Content="Create virtual disk..." Command="{Binding CreateVhdCommand}" Margin="0,0,8,0" />
+                <Button Content="Attach virtual disk..." Command="{Binding AttachVhdCommand}" Margin="0,0,8,0" />
+                <Button Content="Refresh" Command="{Binding RefreshCommand}" Margin="0,0,8,0" />
+                <Button Content="About" Command="{Binding AboutCommand}" />
+            </StackPanel>
+        </DockPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="330" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Disk list -->
+            <Border Grid.Column="0" Style="{StaticResource Card}" Padding="8">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="Disks" Style="{StaticResource SectionText}" Margin="8,4,0,8" />
+                    <ListBox ItemsSource="{Binding Disks}"
+                             SelectedItem="{Binding SelectedDisk}"
+                             HorizontalContentAlignment="Stretch"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             BorderThickness="0"
+                             Background="Transparent">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:DiskViewModel}">
+                                <Grid Margin="2,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="44" Height="44" CornerRadius="10" Background="{Binding IconBrush}" Margin="0,0,12,0" VerticalAlignment="Top">
+                                        <TextBlock Text="{Binding IconText}" Foreground="White" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Subtitle}" Style="{StaticResource CaptionText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                                        <ItemsControl ItemsSource="{Binding Badges}" Margin="0,4,0,0" Focusable="False">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="{x:Type vm:Badge}">
+                                                    <Border Background="{Binding Brush}" CornerRadius="4" Padding="6,1" Margin="0,0,4,2">
+                                                        <TextBlock Text="{Binding Text}" Foreground="White" FontSize="11" />
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <!-- Nothing selected -->
+            <TextBlock Grid.Column="2"
+                       Text="Pick a disk on the left."
+                       Style="{StaticResource CaptionText}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Visibility="{Binding NoDiskSelected, Converter={StaticResource BoolToVisibility}}" />
+
+            <!-- Selected disk -->
+            <DockPanel Grid.Column="2" Visibility="{Binding HasDiskSelected, Converter={StaticResource BoolToVisibility}}">
+
+                <!-- Disk header and disk actions -->
+                <Border DockPanel.Dock="Top" Style="{StaticResource Card}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="{Binding SelectedDisk.Title}" Style="{StaticResource HeaderText}" />
+                        <TextBlock Text="{Binding SelectedDisk.Subtitle}" Style="{StaticResource CaptionText}" Margin="0,2,0,0" />
+                        <TextBlock Text="{Binding SelectedDisk.Details}" Style="{StaticResource CaptionText}" />
+
+                        <ItemsControl ItemsSource="{Binding SelectedDisk.Badges}" Margin="0,8,0,0" Focusable="False">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:Badge}">
+                                    <Border Background="{Binding Brush}" CornerRadius="4" Padding="8,2" Margin="0,0,6,0">
+                                        <TextBlock Text="{Binding Text}" Foreground="White" FontSize="12" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- The partition bar -->
+                        <ListBox ItemsSource="{Binding SelectedDisk.Segments}"
+                                 SelectedItem="{Binding SelectedSegment}"
+                                 Height="76"
+                                 Margin="0,14,0,0"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <controls:ProportionalPanel />
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="controls:ProportionalPanel.Weight" Value="{Binding Weight}" />
+                                    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListBoxItem">
+                                                <Border x:Name="Outline" Padding="2" CornerRadius="7" BorderThickness="2" BorderBrush="Transparent" Background="Transparent">
+                                                    <ContentPresenter />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="Outline" Property="BorderBrush" Value="{StaticResource SelectionOutlineBrush}" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Cursor" Value="Hand" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:SegmentViewModel}">
+                                    <Border Background="{Binding Fill}"
+                                            BorderBrush="{Binding Stroke}"
+                                            BorderThickness="{Binding StrokeThickness}"
+                                            CornerRadius="5"
+                                            Padding="8,6"
+                                            ToolTip="{Binding ToolTip}">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Label}" Foreground="{Binding TextBrush}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding Detail}" Foreground="{Binding TextBrush}" FontSize="11" Opacity="0.9" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <TextBlock Text="Disk" Style="{StaticResource SectionText}" Margin="0,14,0,8" />
+                        <WrapPanel>
+                            <Button Content="Wipe and reuse..." Command="{Binding WipeAndReuseCommand}" Margin="0,0,8,8" />
+                            <Button Content="Create partition..." Command="{Binding CreatePartitionCommand}" Margin="0,0,8,8" />
+                            <Button Content="Convert GPT / MBR..." Command="{Binding ConvertCommand}" Margin="0,0,8,8" />
+                            <Button Content="Clean" Command="{Binding CleanCommand}" Margin="0,0,8,8" />
+                            <Button Content="Clean all" Command="{Binding CleanAllCommand}" Margin="0,0,8,8" />
+                            <Button Content="{Binding SelectedDisk.OnlineActionText}" Command="{Binding ToggleOnlineCommand}" Margin="0,0,8,8" />
+                            <Button Content="{Binding SelectedDisk.ReadOnlyActionText}" Command="{Binding ToggleReadOnlyCommand}" Margin="0,0,8,8" />
+                            <Button Content="Change disk ID..." Command="{Binding ChangeDiskIdCommand}" Margin="0,0,8,8" />
+                            <Button Content="Detach" Command="{Binding DetachCommand}" Visibility="{Binding SelectedDisk.DetachVisibility}" Margin="0,0,8,8" />
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Partitions -->
+                <Border Style="{StaticResource Card}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="Partitions" Style="{StaticResource SectionText}" Margin="0,0,0,8" />
+                        <WrapPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+                            <Button Content="Format..." Command="{Binding FormatCommand}" Margin="0,0,8,8" />
+                            <Button Content="Delete" Command="{Binding DeleteCommand}" Margin="0,0,8,8" />
+                            <Button Content="Drive letter..." Command="{Binding ChangeLetterCommand}" Margin="0,0,8,8" />
+                            <Button Content="Remove letter" Command="{Binding RemoveLetterCommand}" Margin="0,0,8,8" />
+                            <Button Content="Extend..." Command="{Binding ExtendCommand}" Margin="0,0,8,8" />
+                            <Button Content="Shrink..." Command="{Binding ShrinkCommand}" Margin="0,0,8,8" />
+                            <Button Content="Change type..." Command="{Binding ChangeTypeCommand}" Margin="0,0,8,8" />
+                            <Button Content="GPT attributes..." Command="{Binding GptAttributesCommand}" Margin="0,0,8,8" />
+                        </WrapPanel>
+                        <Grid>
+                            <DataGrid ItemsSource="{Binding SelectedDisk.Partitions}"
+                                      SelectedItem="{Binding SelectedPartition}"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      SelectionMode="Single"
+                                      SelectionUnit="FullRow"
+                                      HeadersVisibility="Column"
+                                      GridLinesVisibility="None"
+                                      CanUserAddRows="False"
+                                      CanUserDeleteRows="False"
+                                      CanUserResizeRows="False">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="#" Binding="{Binding Number}" Width="44" />
+                                    <DataGridTextColumn Header="Letter" Binding="{Binding LetterText}" Width="64" />
+                                    <DataGridTextColumn Header="Label" Binding="{Binding Label}" Width="*" />
+                                    <DataGridTextColumn Header="Type" Binding="{Binding TypeName}" Width="1.2*" />
+                                    <DataGridTextColumn Header="File system" Binding="{Binding FileSystemText}" Width="*" />
+                                    <DataGridTextColumn Header="Size" Binding="{Binding SizeText}" Width="90" />
+                                    <DataGridTextColumn Header="Free" Binding="{Binding FreeText}" Width="90" />
+                                    <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" Width="1.5*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <TextBlock Text="No partitions on this disk."
+                                       Style="{StaticResource CaptionText}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Visibility="{Binding SelectedDisk.HasNoPartitions, Converter={StaticResource BoolToVisibility}}" />
+                        </Grid>
+                    </DockPanel>
+                </Border>
+            </DockPanel>
+        </Grid>
+
+        <!-- diskpart output -->
+        <Expander Grid.Row="2" Header="diskpart output" Margin="0,12,0,0">
+            <TextBox Text="{Binding LogText, Mode=OneWay}"
+                     IsReadOnly="True"
+                     FontFamily="{StaticResource MonoFont}"
+                     FontSize="12"
+                     Height="180"
+                     Margin="0,8,0,0"
+                     TextWrapping="NoWrap"
+                     VerticalScrollBarVisibility="Auto"
+                     HorizontalScrollBarVisibility="Auto" />
+        </Expander>
+
+        <!-- Status bar -->
+        <DockPanel Grid.Row="3" Margin="2,10,2,0">
+            <TextBlock DockPanel.Dock="Right" Text="Running as administrator · made by flyte" Style="{StaticResource CaptionText}" />
+            <TextBlock Text="{Binding Status}" Style="{StaticResource CaptionText}" />
+        </DockPanel>
+    </Grid>
+</Window>

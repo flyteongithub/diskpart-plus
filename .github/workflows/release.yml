@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    env:
+      DISKPARTPLUS_INTEGRATION: '1'
+      DOTNET_NOLOGO: '1'
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Test
+        run: dotnet test DiskpartPlus.slnx --configuration Release
+
+      - name: Publish x64 and ARM64
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          foreach ($rid in 'win-x64', 'win-arm64') {
+            dotnet publish src/DiskpartPlus.App/DiskpartPlus.App.csproj `
+              --configuration Release --runtime $rid --self-contained `
+              -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+              -p:EnableCompressionInSingleFile=true -p:DebugType=none `
+              -p:Version=$version --output "publish/$rid"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            Copy-Item "publish/$rid/DiskpartPlus.exe" "DiskpartPlus-$version-$rid.exe"
+          }
+
+      - name: Create the GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          gh release create "${{ github.ref_name }}" `
+            "DiskpartPlus-$version-win-x64.exe" `
+            "DiskpartPlus-$version-win-arm64.exe" `
+            --title "Diskpart+ ${{ github.ref_name }}" `
+            --notes-file docs/RELEASE_NOTES.md `
+            --prerelease

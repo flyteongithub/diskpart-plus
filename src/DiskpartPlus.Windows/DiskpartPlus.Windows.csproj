@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>DiskpartPlus.Windows</RootNamespace>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Description>The Windows side of Diskpart+: reads disks through the storage API and runs diskpart.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DiskpartPlus.Core\DiskpartPlus.Core.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,8 +1,11 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/DiskpartPlus.App/DiskpartPlus.App.csproj" />
     <Project Path="src/DiskpartPlus.Core/DiskpartPlus.Core.csproj" />
+    <Project Path="src/DiskpartPlus.Windows/DiskpartPlus.Windows.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/DiskpartPlus.Core.Tests/DiskpartPlus.Core.Tests.csproj" />
+    <Project Path="tests/DiskpartPlus.Windows.Tests/DiskpartPlus.Windows.Tests.csproj" />
   </Folder>
 </Solution>

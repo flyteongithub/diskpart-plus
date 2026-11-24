@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AssemblyName>DiskpartPlus</AssemblyName>
+    <RootNamespace>DiskpartPlus.App</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\DiskpartPlus.ico</ApplicationIcon>
+    <Description>A modern, safe GUI for Windows diskpart.</Description>
+    <!-- WPF's Fluent theme switch is still marked experimental in .NET 10. -->
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\DiskpartPlus.ico" />
+    <Resource Include="Assets\DiskpartPlus.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DiskpartPlus.Core\DiskpartPlus.Core.csproj" />
+    <ProjectReference Include="..\DiskpartPlus.Windows\DiskpartPlus.Windows.csproj" />
+  </ItemGroup>
+
+</Project>

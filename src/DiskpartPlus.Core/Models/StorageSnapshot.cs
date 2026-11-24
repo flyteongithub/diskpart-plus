@@ -22,6 +22,12 @@ public sealed record StorageSnapshot
     public DiskInfo? FindVirtualDisk(string filePath) =>
         Disks.FirstOrDefault(d => d.IsVirtual && SamePath(d.Location, filePath));
 
+    /// <summary>Free drive letters from C to Z. A and B are left out because Windows keeps them for floppy drives.</summary>
+    public IEnumerable<DriveLetter> AvailableLetters() =>
+        Enumerable.Range('C', 'Z' - 'C' + 1)
+            .Select(c => new DriveLetter((char)c))
+            .Where(l => !IsLetterInUse(l));
+
     public bool IsLetterInUse(DriveLetter letter) =>
         OtherLettersInUse.Contains(letter)
         || Disks.Any(d => d.Partitions.Any(p => p.Letter == letter));
