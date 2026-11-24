@@ -15,16 +15,16 @@ public sealed record CreateVirtualDisk(
     public override string Describe()
     {
         var kind = Allocation == VirtualDiskAllocation.Fixed ? "fixed" : "expandable";
-        var text = $"Create a {MaximumSize} {kind} virtual disk at {FilePath}";
+        var text = $"Create {MaximumSize} {kind} VHD at {FilePath}";
 
         if (Attach || Setup is not null)
         {
-            text += " and attach it";
+            text += ", attach";
         }
 
         if (Setup is not null)
         {
-            text += $", set up as {Setup.Style.ToString().ToUpperInvariant()} with one {Setup.Format.Describe()} partition";
+            text += $", {Setup.Style.ToString().ToUpperInvariant()}, {Setup.Format.Describe()}";
         }
 
         return text;

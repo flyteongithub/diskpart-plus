@@ -37,5 +37,5 @@ public sealed record DriveAssignment(DriveLetter? Letter)
 {
     public static DriveAssignment NextFree { get; } = new((DriveLetter?)null);
 
-    public string Describe() => Letter is { } letter ? $"drive letter {letter.WithColon}" : "the next free drive letter";
+    public string Describe() => Letter is { } letter ? $"letter {letter.WithColon}" : "next free letter";
 }

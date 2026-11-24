@@ -6,14 +6,14 @@ namespace DiskpartPlus.Core.Operations;
 public sealed record CleanDisk(int DiskNumber, bool ZeroEverySector = false) : DiskScopedOperation(DiskNumber)
 {
     public override string Describe() => ZeroEverySector
-        ? $"Wipe every sector of disk {DiskNumber} (clean all)"
-        : $"Remove all partitions from disk {DiskNumber} (clean)";
+        ? $"Clean all disk {DiskNumber} (zero every sector)"
+        : $"Clean disk {DiskNumber}";
 }
 
 /// <summary>Switches an empty disk between GPT and MBR.</summary>
 public sealed record ConvertPartitionStyle(int DiskNumber, PartitionStyle To) : DiskScopedOperation(DiskNumber)
 {
-    public override string Describe() => $"Set up disk {DiskNumber} as {To.ToString().ToUpperInvariant()}";
+    public override string Describe() => $"Convert disk {DiskNumber} to {To.ToString().ToUpperInvariant()}";
 }
 
 public sealed record SetDiskOnline(int DiskNumber, bool Online) : DiskScopedOperation(DiskNumber)
@@ -57,17 +57,17 @@ public sealed record CreatePartition(
             _ => "primary",
         };
 
-        var size = Size is { } s ? $"{s} {kind} partition" : $"{kind} partition using the rest of the space";
-        var text = $"Create a {size} on disk {DiskNumber}";
+        var size = Size is { } s ? s.ToString() : "all free space";
+        var text = $"Create {kind} partition on disk {DiskNumber} ({size})";
 
         if (Format is not null)
         {
-            text += $", formatted {Format.Describe()}";
+            text += $", {Format.Describe()}";
         }
 
         if (Assign is not null)
         {
-            text += $", with {Assign.Describe()}";
+            text += $", {Assign.Describe()}";
         }
 
         return text;

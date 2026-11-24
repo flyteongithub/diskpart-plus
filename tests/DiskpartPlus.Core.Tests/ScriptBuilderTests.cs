@@ -177,7 +177,7 @@ public class ScriptBuilderTests
         var script = DiskpartScriptBuilder.Build([new CleanDisk(1), new ConvertPartitionStyle(1, PartitionStyle.Gpt)]);
 
         Assert.Equal(DiskpartScriptBuilder.Header, script.Lines[0]);
-        Assert.Equal("rem Remove all partitions from disk 1 (clean)", script.Lines[1]);
+        Assert.Equal("rem Clean disk 1", script.Lines[1]);
         Assert.Equal(new[] { "select disk 1", "clean", "select disk 1", "convert gpt" }, script.Commands.ToList());
         Assert.EndsWith("\r\n", script.ToText());
         Assert.DoesNotContain("\r\n\r\n", script.ToText());

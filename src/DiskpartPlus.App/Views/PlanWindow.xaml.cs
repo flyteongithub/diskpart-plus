@@ -10,7 +10,7 @@ using DiskpartPlus.Core.Safety;
 namespace DiskpartPlus.App.Views;
 
 /// <summary>
-/// The one check before anything that erases data: what will happen, the script, and a button
+/// The one check before anything that erases data: what will happen, the script and a button
 /// that says exactly what it does. Then it runs and shows diskpart's output.
 /// </summary>
 public partial class PlanWindow : Window

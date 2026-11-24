@@ -26,7 +26,7 @@ public enum IssueSeverity
     Blocker,
 }
 
-/// <summary>A reason a plan can't run, or the odd warning worth knowing.</summary>
+/// <summary>A reason a plan can't run. Occasionally just a warning worth knowing.</summary>
 public sealed record PlanIssue(IssueSeverity Severity, string Code, string Message)
 {
     /// <summary>The operation this is about, if it's about one in particular.</summary>

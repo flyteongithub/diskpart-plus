@@ -94,7 +94,7 @@ internal static class UiSnapshot
         await window.Dispatcher.InvokeAsync(() => window.UpdateLayout(), DispatcherPriority.ApplicationIdle);
     }
 
-    // Windows won't let a window grow past the screen, and CI machines have small screens.
+    // Windows won't let a window grow past the screen. CI machines have small screens.
     // So shrink the content with a layout transform until a normal desktop size fits, which
     // makes it lay out exactly as it would at that size, then draw it back at full size.
     private static async Task SaveAt(Window window, double width, double height, string path)
