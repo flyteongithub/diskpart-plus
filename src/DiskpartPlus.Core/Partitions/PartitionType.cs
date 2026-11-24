@@ -31,6 +31,9 @@ public sealed record PartitionType
     /// </summary>
     public bool IsDataPartition { get; init; }
 
+    /// <summary>A shorter name for tight spaces, like "MSR". Falls back to Name.</summary>
+    public string? ShortName { get; init; }
+
     /// <summary>A short note we can show in the UI, like "Holds the boot loader".</summary>
     public string? Notes { get; init; }
 

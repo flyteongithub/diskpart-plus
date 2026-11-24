@@ -28,7 +28,7 @@ public sealed class DiskViewModel
 
     public string Subtitle => $"Disk {Disk.Number} · {Disk.Size} · {StyleText}";
 
-    public string Details => $"{BusText} · {MediaText}" + (Disk.IsVirtual && Disk.Location is { } path ? $" · {path}" : string.Empty);
+    public string Details => string.Join(" · ", new[] { BusText, MediaText, Disk.IsVirtual ? Disk.Location : null }.Where(s => !string.IsNullOrEmpty(s)));
 
     public string StyleText => Disk.Style switch
     {
@@ -63,7 +63,7 @@ public sealed class DiskViewModel
 
     public Visibility DetachVisibility => Disk.IsVirtual ? Visibility.Visible : Visibility.Collapsed;
 
-    private string BusText => Disk.Bus switch
+    private string? BusText => Disk.Bus switch
     {
         BusType.Nvme => "NVMe",
         BusType.Sata => "SATA",
@@ -74,15 +74,15 @@ public sealed class DiskViewModel
         BusType.SecureDigital => "SD card",
         BusType.FileBackedVirtual or BusType.Virtual => "Virtual disk",
         BusType.StorageSpaces => "Storage Spaces",
-        _ => "Unknown connection",
+        _ => null,
     };
 
-    private string MediaText => Disk.Media switch
+    private string? MediaText => Disk.Media switch
     {
         MediaType.Ssd => "SSD",
         MediaType.Hdd => "Hard drive",
         MediaType.Scm => "Storage class memory",
-        _ => "Unknown type",
+        _ => null,
     };
 
     private static List<Badge> BuildBadges(DiskInfo disk)

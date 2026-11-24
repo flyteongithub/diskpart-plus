@@ -4,7 +4,7 @@
         xmlns:controls="clr-namespace:DiskpartPlus.App.Controls"
         xmlns:vm="clr-namespace:DiskpartPlus.App.ViewModels"
         Title="Diskpart+"
-        Width="1240" Height="820" MinWidth="980" MinHeight="640"
+        Width="1240" Height="820" MinWidth="900" MinHeight="560"
         WindowStartupLocation="CenterScreen"
         Icon="/Assets/DiskpartPlus.ico">
 
@@ -95,7 +95,7 @@
             <DockPanel Grid.Column="2" Visibility="{Binding HasDiskSelected, Converter={StaticResource BoolToVisibility}}">
 
                 <!-- Disk header and disk actions -->
-                <Border DockPanel.Dock="Top" Style="{StaticResource Card}" Margin="0,0,0,12">
+                <Border DockPanel.Dock="Top" Style="{StaticResource Card}" Margin="0,0,0,12" Padding="16,14">
                     <StackPanel>
                         <TextBlock Text="{Binding SelectedDisk.Title}" Style="{StaticResource HeaderText}" />
                         <TextBlock Text="{Binding SelectedDisk.Subtitle}" Style="{StaticResource CaptionText}" Margin="0,2,0,0" />
@@ -119,8 +119,8 @@
                         <!-- The partition bar -->
                         <ListBox ItemsSource="{Binding SelectedDisk.Segments}"
                                  SelectedItem="{Binding SelectedSegment}"
-                                 Height="76"
-                                 Margin="0,14,0,0"
+                                 Height="68"
+                                 Margin="0,12,0,0"
                                  BorderThickness="0"
                                  Background="Transparent"
                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -170,8 +170,7 @@
                             </ListBox.ItemTemplate>
                         </ListBox>
 
-                        <TextBlock Text="Disk" Style="{StaticResource SectionText}" Margin="0,14,0,8" />
-                        <WrapPanel>
+                        <WrapPanel Margin="0,12,0,-8">
                             <Button Content="Wipe and reuse..." Command="{Binding WipeAndReuseCommand}" Margin="0,0,8,8" />
                             <Button Content="Create partition..." Command="{Binding CreatePartitionCommand}" Margin="0,0,8,8" />
                             <Button Content="Convert GPT / MBR..." Command="{Binding ConvertCommand}" Margin="0,0,8,8" />
@@ -210,15 +209,16 @@
                                       GridLinesVisibility="None"
                                       CanUserAddRows="False"
                                       CanUserDeleteRows="False"
-                                      CanUserResizeRows="False">
+                                      CanUserResizeRows="False"
+                                      MinHeight="120">
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="#" Binding="{Binding Number}" Width="44" />
-                                    <DataGridTextColumn Header="Letter" Binding="{Binding LetterText}" Width="64" />
+                                    <DataGridTextColumn Header="#" Binding="{Binding Number}" Width="40" />
+                                    <DataGridTextColumn Header="Letter" Binding="{Binding LetterText}" Width="62" />
                                     <DataGridTextColumn Header="Label" Binding="{Binding Label}" Width="*" />
-                                    <DataGridTextColumn Header="Type" Binding="{Binding TypeName}" Width="1.2*" />
-                                    <DataGridTextColumn Header="File system" Binding="{Binding FileSystemText}" Width="*" />
-                                    <DataGridTextColumn Header="Size" Binding="{Binding SizeText}" Width="90" />
-                                    <DataGridTextColumn Header="Free" Binding="{Binding FreeText}" Width="90" />
+                                    <DataGridTextColumn Header="Type" Binding="{Binding TypeName}" Width="1.4*" MinWidth="120" />
+                                    <DataGridTextColumn Header="File system" Binding="{Binding FileSystemText}" Width="*" MinWidth="104" />
+                                    <DataGridTextColumn Header="Size" Binding="{Binding SizeText}" Width="84" />
+                                    <DataGridTextColumn Header="Free" Binding="{Binding FreeText}" Width="84" />
                                     <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" Width="1.5*" />
                                 </DataGrid.Columns>
                             </DataGrid>

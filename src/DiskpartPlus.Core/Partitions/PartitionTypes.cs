@@ -7,17 +7,17 @@ namespace DiskpartPlus.Core.Partitions;
 public static class PartitionTypes
 {
     // Windows (GPT)
-    public static readonly PartitionType EfiSystem = Gpt("EFI system", PartitionFamily.Windows, "C12A7328-F81F-11D2-BA4B-00A0C93EC93B", notes: "Holds the boot loader");
-    public static readonly PartitionType MicrosoftReserved = Gpt("Microsoft reserved", PartitionFamily.Windows, "E3C9E316-0B5C-4DB8-817D-F92DF00215AE", notes: "Small hidden partition Windows keeps for itself");
+    public static readonly PartitionType EfiSystem = Gpt("EFI system", PartitionFamily.Windows, "C12A7328-F81F-11D2-BA4B-00A0C93EC93B", notes: "Holds the boot loader") with { ShortName = "EFI" };
+    public static readonly PartitionType MicrosoftReserved = Gpt("Microsoft reserved", PartitionFamily.Windows, "E3C9E316-0B5C-4DB8-817D-F92DF00215AE", notes: "Small hidden partition Windows keeps for itself") with { ShortName = "MSR" };
     public static readonly PartitionType BasicData = Gpt("Basic data", PartitionFamily.Windows, "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7", data: true);
-    public static readonly PartitionType WindowsRecovery = Gpt("Windows recovery", PartitionFamily.Windows, "DE94BBA4-06D1-4D40-A16A-BFD50179D6AC", notes: "Holds the Windows recovery tools");
+    public static readonly PartitionType WindowsRecovery = Gpt("Windows recovery", PartitionFamily.Windows, "DE94BBA4-06D1-4D40-A16A-BFD50179D6AC", notes: "Holds the Windows recovery tools") with { ShortName = "Recovery" };
     public static readonly PartitionType LdmMetadata = Gpt("Dynamic disk metadata", PartitionFamily.Windows, "5808C8AA-7E8F-42E0-85D2-E1E90434CFB3");
     public static readonly PartitionType LdmData = Gpt("Dynamic disk data", PartitionFamily.Windows, "AF9B60A0-1431-4F62-BC68-3311714A69AD");
     public static readonly PartitionType StorageSpaces = Gpt("Storage Spaces", PartitionFamily.Windows, "E75CAF8F-F680-4CEE-AFA3-B001E56EFC2D");
 
     // Apple (GPT). Windows can't read any of these.
-    public static readonly PartitionType Apfs = Gpt("APFS container", PartitionFamily.Apple, "7C3457EF-0000-11AA-AA11-00306543ECAC", notes: "Modern Mac file system");
-    public static readonly PartitionType HfsPlus = Gpt("Mac OS Extended (HFS+)", PartitionFamily.Apple, "48465300-0000-11AA-AA11-00306543ECAC", notes: "Older Mac file system");
+    public static readonly PartitionType Apfs = Gpt("APFS container", PartitionFamily.Apple, "7C3457EF-0000-11AA-AA11-00306543ECAC", notes: "Modern Mac file system") with { ShortName = "APFS" };
+    public static readonly PartitionType HfsPlus = Gpt("Mac OS Extended (HFS+)", PartitionFamily.Apple, "48465300-0000-11AA-AA11-00306543ECAC", notes: "Older Mac file system") with { ShortName = "HFS+" };
     public static readonly PartitionType AppleBoot = Gpt("Apple boot (Recovery HD)", PartitionFamily.Apple, "426F6F74-0000-11AA-AA11-00306543ECAC");
     public static readonly PartitionType AppleCoreStorage = Gpt("Apple Core Storage", PartitionFamily.Apple, "53746F72-6167-11AA-AA11-00306543ECAC", notes: "Used by Fusion Drives and older FileVault");
     public static readonly PartitionType AppleRaid = Gpt("Apple RAID", PartitionFamily.Apple, "52414944-0000-11AA-AA11-00306543ECAC");
@@ -43,7 +43,7 @@ public static class PartitionTypes
     public static readonly PartitionType MbrFat12 = Mbr("FAT12", PartitionFamily.Windows, 0x01, data: true);
     public static readonly PartitionType MbrExtended = Mbr("Extended", PartitionFamily.Windows, 0x05);
     public static readonly PartitionType MbrExtendedLba = Mbr("Extended (LBA)", PartitionFamily.Windows, 0x0F);
-    public static readonly PartitionType MbrWindowsRecovery = Mbr("Windows recovery", PartitionFamily.Windows, 0x27, notes: "Holds the Windows recovery tools");
+    public static readonly PartitionType MbrWindowsRecovery = Mbr("Windows recovery", PartitionFamily.Windows, 0x27, notes: "Holds the Windows recovery tools") with { ShortName = "Recovery" };
     public static readonly PartitionType MbrDynamic = Mbr("Dynamic disk", PartitionFamily.Windows, 0x42);
     public static readonly PartitionType MbrEfiSystem = Mbr("EFI system", PartitionFamily.Windows, 0xEF);
     public static readonly PartitionType MbrGptProtective = Mbr("GPT protective", PartitionFamily.Other, 0xEE);

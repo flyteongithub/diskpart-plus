@@ -71,7 +71,7 @@ public sealed class SegmentViewModel
     public static SegmentViewModel For(PartitionViewModel partition)
     {
         var p = partition.Partition;
-        var name = string.IsNullOrEmpty(partition.Label) ? p.Type.Name : partition.Label;
+        var name = string.IsNullOrEmpty(partition.Label) ? p.Type.ShortName ?? p.Type.Name : partition.Label;
         var label = p.Letter is { } letter ? $"{letter.WithColon} {name}" : name;
         var detail = string.IsNullOrEmpty(partition.FileSystemText) ? p.Size.ToString() : $"{p.Size} {partition.FileSystemText}";
 

@@ -14,6 +14,11 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        // Don't open bigger than the screen on small laptops.
+        var area = SystemParameters.WorkArea;
+        Width = Math.Min(Width, area.Width * 0.94);
+        Height = Math.Min(Height, area.Height * 0.94);
         _viewModel = new MainViewModel(new CimStorageInventory(), new DiskpartRunner(), () => this);
         DataContext = _viewModel;
         Loaded += async (_, _) => await _viewModel.RefreshAsync();
