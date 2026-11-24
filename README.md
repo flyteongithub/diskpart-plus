@@ -5,7 +5,7 @@
 
 <p align="center">
   A clean, modern GUI for Windows' built-in <code>diskpart</code>.<br>
-  All the power of the command line, without guessing which disk is which.
+  Everything diskpart can do, without typing it all out.
 </p>
 
 <p align="center">
@@ -28,11 +28,11 @@
 2. Double-click it. It's a single file with nothing to install. Windows asks for admin rights because diskpart needs them.
 3. The app isn't code-signed yet, so Windows may say **"Windows protected your PC"**. Click **More info**, then **Run anyway**.
 
-New to it? Click **Create virtual disk...** first and practise on that. It behaves like a real disk and you can wipe it as often as you like.
+Want a throwaway disk to try things on? **Virtual disk > Create...** makes one in seconds.
 
 ## Why
 
-Diskpart+ puts a proper interface on top of diskpart.
+diskpart can do far more than Disk Management, but every job is a string of typed commands: `list disk`, `select disk 2`, `clean`, `convert gpt`, `create partition primary`, `format fs=exfat quick`, `assign`. Diskpart+ puts a proper interface on top of diskpart, so the same job is a couple of clicks.
 
 ## What it does
 

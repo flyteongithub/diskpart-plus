@@ -9,7 +9,7 @@
     <RootNamespace>DiskpartPlus.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\DiskpartPlus.ico</ApplicationIcon>
-    <Description>A modern, safe GUI for Windows diskpart.</Description>
+    <Description>A modern GUI for Windows diskpart.</Description>
     <!-- WPF's Fluent theme switch is still marked experimental in .NET 10. -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
   </PropertyGroup>
