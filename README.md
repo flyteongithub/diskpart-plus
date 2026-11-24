@@ -58,28 +58,9 @@ diskpart can do far more than Disk Management, but every job is a string of type
 **Virtual disks**
 - Create, attach and detach VHD and VHDX files
 
-**The app**
-- Fluent design with light and dark themes that follow Windows
-- Live diskpart output and the exact script for every change
-
-## Safety without the hand-holding
-
-- **One look before anything is erased.** Format, delete and clean show the steps and the exact script, with a button that says what it does ("Erase disk 2"). Everything else just runs.
-- **It won't touch your Windows disk.** Destructive changes to the disk Windows runs or boots from, the page file disk or the disk Diskpart+ runs from are blocked.
-- **It checks it's still the same drive.** Disk numbers can change when drives come and go, so Diskpart+ re-reads your disks right before running.
-- **Mistakes get caught early.** FAT32 over 32 GB, labels that are too long, letters already taken and so on are flagged in one line before diskpart starts.
-
 ## What it can't do
 
 Diskpart+ can tell you a partition is APFS or HFS+ and it can wipe it, but it can't open it or copy files off it. Windows has no driver for Mac file systems, so diskpart only ever sees them as raw partitions. If there's anything on the drive you need, back it up on a Mac first.
-
-## How it's tested
-
-- **Engine:** over 120 unit tests cover the safety rules, the planner and every diskpart command it can write.
-- **Real diskpart:** on every push, CI creates throwaway virtual disks on Windows and runs every kind of operation through real diskpart, then reads the disks back to check the result.
-- **UI:** CI launches the built app, renders its windows in light and dark mode and fails if anything breaks.
-
-What hasn't happened yet is testing on lots of real hardware. If something looks off on your machine, please [open an issue](https://github.com/flyteongithub/diskpart-plus/issues).
 
 ## Roadmap
 
