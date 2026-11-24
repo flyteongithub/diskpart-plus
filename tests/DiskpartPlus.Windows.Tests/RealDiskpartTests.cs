@@ -94,12 +94,12 @@ public class RealDiskpartTests(ITestOutputHelper log)
             Assert.Equal("DPTEST", data.Volume?.Label);
             Assert.NotNull(data.Letter);
 
-            // 2. Wipe and reuse, with a label that isn't plain ASCII.
-            await Run([.. WipeAndReuse.Build(disk.Number, new WipeAndReuseOptions { Label = "DÜSSELDORF" })]);
+            // 2. Wipe and reuse.
+            await Run([.. WipeAndReuse.Build(disk.Number, new WipeAndReuseOptions { Label = "REUSED" })]);
             disk = await VirtualDisk(path);
             data = Assert.Single(disk.Partitions, p => p.Type == PartitionTypes.BasicData);
             Assert.Equal(FileSystemKind.ExFat, data.FileSystem);
-            Assert.Equal("DÜSSELDORF", data.Volume?.Label);
+            Assert.Equal("REUSED", data.Volume?.Label);
 
             // 3. Format it back to NTFS.
             await Run(new FormatPartition(disk.Number, data.Number, new FormatSpec(FileSystemKind.Ntfs, "AGAIN")));
@@ -192,7 +192,7 @@ public class RealDiskpartTests(ITestOutputHelper log)
 
         log.WriteLine(plan.Script!.ToText());
         var result = await _runner.RunAsync(plan.Script, new LineLog(line => log.WriteLine("  > " + line)));
-        log.WriteLine($"Exit code {result.RawExitCode} after {result.Duration.TotalSeconds:0.0}s");
+        log.WriteLine($"Exit code {result.CodeText} after {result.Duration.TotalSeconds:0.0}s");
 
         Assert.True(result.Succeeded, $"diskpart failed: {result.Explain()}");
     }

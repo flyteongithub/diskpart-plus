@@ -1,3 +1,4 @@
+using DiskpartPlus.Core.Execution;
 using DiskpartPlus.Core.Models;
 using DiskpartPlus.Core.Operations;
 using DiskpartPlus.Core.Planning;
@@ -145,5 +146,16 @@ public class PlannerTests
         var plan = OperationPlanner.Create(WipeAndReuse.Build(1, options), TestDisks.Context());
 
         Assert.Contains(plan.Issues, i => i.Code == IssueCodes.Fat32TooLarge && i.Severity == IssueSeverity.Blocker);
+    }
+
+    [Fact]
+    public void Exit_codes_are_explained_and_hresults_shown_in_hex()
+    {
+        var hresult = new DiskpartRunResult(-2147024809, [], TimeSpan.Zero);
+
+        Assert.False(hresult.Succeeded);
+        Assert.Equal("0x80070057", hresult.CodeText);
+        Assert.Contains("0x80070057", hresult.Explain());
+        Assert.True(new DiskpartRunResult(0, [], TimeSpan.Zero).Succeeded);
     }
 }

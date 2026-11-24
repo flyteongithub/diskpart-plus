@@ -19,8 +19,9 @@ public interface IDiskpartRunner
 }
 
 /// <summary>
-/// diskpart's exit codes when running a script. Anything other than zero means it stopped early,
-/// and since we never use "noerr", nothing after the failing line ran.
+/// The small exit codes Microsoft documents for diskpart scripts. On current Windows, a failing
+/// command usually returns a Windows error code (an HRESULT like 0x80070057) instead, so treat
+/// anything that isn't zero as a failure and show the code.
 /// </summary>
 public enum DiskpartExitCode
 {
@@ -40,6 +41,9 @@ public sealed record DiskpartRunResult(int RawExitCode, IReadOnlyList<string> Ou
 
     public bool Succeeded => RawExitCode == 0;
 
+    /// <summary>The exit code the way Windows people expect to see it, like 0x80070057.</summary>
+    public string CodeText => RawExitCode < 0 ? $"0x{(uint)RawExitCode:X8}" : RawExitCode.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
     // We go by the exit code, not the text. diskpart's messages are translated into the
     // Windows display language, so matching on English words would break for most people.
     public string Explain() => ExitCode switch
@@ -50,6 +54,6 @@ public sealed record DiskpartRunResult(int RawExitCode, IReadOnlyList<string> Ou
         DiskpartExitCode.ScriptFileError => "diskpart couldn't open the script file.",
         DiskpartExitCode.ServiceError => "A Windows disk service reported a failure. The output above has the details.",
         DiskpartExitCode.CommandError => "One of the commands failed. The output above shows which one.",
-        _ => $"diskpart stopped with an unexpected code ({RawExitCode}).",
+        _ => $"diskpart stopped with error {CodeText}. The output above shows which command failed.",
     };
 }

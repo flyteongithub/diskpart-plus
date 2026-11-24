@@ -143,7 +143,7 @@ public partial class PlanWindow : Window
             await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Background);
 
             Append(string.Empty);
-            Append($"Exit code {result.RawExitCode} after {result.Duration.TotalSeconds:0.0} seconds.");
+            Append($"Exit code {result.CodeText} after {result.Duration.TotalSeconds:0.0} seconds.");
             Finish(result.Succeeded, result.Succeeded ? "Done. " + result.Explain() : "diskpart stopped with an error. " + result.Explain());
         }
         catch (OperationCanceledException)
