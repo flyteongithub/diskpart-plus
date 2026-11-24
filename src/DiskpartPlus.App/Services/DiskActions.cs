@@ -13,7 +13,7 @@ namespace DiskpartPlus.App.Services;
 
 /// <summary>
 /// Asks the user for whatever an action needs and turns the answers into operations.
-/// Nothing here decides whether something is safe. That's the planner's job, and the
+/// Nothing here decides whether something is safe. That's the planner's job. The
 /// review window shows its verdict before anything runs.
 /// Every method returns null if the user cancels.
 /// </summary>
@@ -63,7 +63,7 @@ internal static class DiskActions
         var fileSystem = form.AddChoice("File system", NoneOr(FileSystemChoices(includeRefs: true)), selectedIndex: 1);
         var label = form.AddText("Label", "DATA");
         var letter = form.AddChoice("Drive letter", LetterChoices(snapshot, includeNone: true));
-        form.Validate = () => OptionalMegabytes(size.Text, out _) ? null : "Size has to be a whole number of MB, or empty.";
+        form.Validate = () => OptionalMegabytes(size.Text, out _) ? null : "Size has to be empty or a whole number of MB.";
 
         if (!form.Ask())
         {
@@ -160,7 +160,7 @@ internal static class DiskActions
     {
         var form = new FormDialog(owner, "Extend partition", "Grows the partition into free space straight after it. Only works on NTFS and ReFS.");
         var size = form.AddText("Grow by (MB)", string.Empty, "Leave empty to use all of the free space after it.");
-        form.Validate = () => OptionalMegabytes(size.Text, out _) ? null : "Size has to be a whole number of MB, or empty.";
+        form.Validate = () => OptionalMegabytes(size.Text, out _) ? null : "Size has to be empty or a whole number of MB.";
 
         if (!form.Ask())
         {

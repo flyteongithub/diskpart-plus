@@ -41,7 +41,7 @@ public sealed class FormDialog : Window
         Content = root;
     }
 
-    /// <summary>Returns an error message to show, or null if the form is good to go.</summary>
+    /// <summary>Returns an error message to show. Null means the form is good to go.</summary>
     public Func<string?>? Validate { get; set; }
 
     public bool Ask() => ShowDialog() == true;

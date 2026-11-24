@@ -7,7 +7,9 @@ Thanks for wanting to help. This is a tool that can erase disks, so the bar for 
 1. Install the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
 2. Clone the repo and run `dotnet test`. Everything should pass before you change anything.
 
-The engine (`DiskpartPlus.Core`) builds and tests on Windows, macOS and Linux. The app will need Windows.
+The engine (`DiskpartPlus.Core`) builds and tests on Windows, macOS and Linux. The app and the real diskpart tests need Windows.
+
+The real diskpart tests (`DiskpartPlus.Windows.Tests`) do nothing unless you run them as administrator with `DISKPARTPLUS_INTEGRATION=1` set. They only ever create, change and delete throwaway VHDX files in your temp folder. CI runs them on every push.
 
 ## Ground rules
 

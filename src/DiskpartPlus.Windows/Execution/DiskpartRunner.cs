@@ -108,7 +108,7 @@ public sealed class DiskpartRunner : IDiskpartRunner
         }
         catch (OperationCanceledException)
         {
-            // Only "clean all" offers a stop button, and stopping that just leaves part of the disk zeroed.
+            // Only "clean all" offers a stop button. Stopping that just leaves part of the disk zeroed.
             try
             {
                 process.Kill(entireProcessTree: true);

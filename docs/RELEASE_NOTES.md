@@ -3,7 +3,7 @@ First preview of Diskpart+, a modern GUI for Windows' built-in diskpart.
 ## Download
 
 - **DiskpartPlus-…-win-x64.exe** for almost every Windows PC
-- **DiskpartPlus-…-win-arm64.exe** for ARM PCs (Snapdragon / Copilot+ laptops)
+- **DiskpartPlus-…-win-arm64.exe** for ARM PCs (Snapdragon and other ARM laptops)
 
 It's a single file. No installer and nothing else to download.
 

@@ -30,14 +30,14 @@ Diskpart+ is split so the risky part (deciding what to run) can be tested proper
 | Project | What it does | Depends on |
 |---|---|---|
 | `DiskpartPlus.Core` | Models, partition types, operations, safety rules, planner, script builder | nothing |
-| `DiskpartPlus.Windows` *(next)* | Reads disks through the Windows storage API and runs diskpart | Core |
-| `DiskpartPlus.App` *(next)* | The WPF interface | Core, Windows |
+| `DiskpartPlus.Windows` | Reads disks through the Windows storage API and runs diskpart | Core, System.Management |
+| `DiskpartPlus.App` | The WPF interface | Core, Windows |
 
 Core has no dependencies and doesn't call any Windows APIs. That's on purpose: every rule about what's safe to run can be unit tested on any machine, including CI.
 
 ## Reading disks
 
-The plan is to read disk state from the Windows storage management API (`MSFT_Disk`, `MSFT_Partition`, `MSFT_Volume` and `MSFT_PhysicalDisk` over CIM) and not from diskpart's own output.
+Disk state comes from the Windows storage management API (`MSFT_Disk`, `MSFT_Partition`, `MSFT_Volume` and `MSFT_PhysicalDisk` over CIM, via `CimStorageInventory`) and not from diskpart's own output. The page file comes from `Win32_PageFileUsage` and BitLocker status from `Win32_EncryptableVolume`.
 
 diskpart's output is translated into whatever language Windows is set to, so anything that matches English words breaks for most of the world. It also rounds sizes and is slow to start. The storage API gives structured data with exact byte sizes in every language.
 
@@ -84,13 +84,28 @@ A disk is critical if it holds the running copy of Windows, the system (EFI) par
 
 Disk numbers aren't stable. Unplug one USB drive and plug in another and "disk 2" can be a different drive. diskpart can only select disks by number, so every plan records a fingerprint of each disk it touches (number, size, unique ID, serial and name). Right before running, the app reads the disks again and `CheckTargetsStillMatch` refuses to go ahead if anything has changed.
 
-## Running scripts *(next)*
+## Running scripts
+
+`DiskpartRunner` handles this:
 
 - Each run writes its script to a fresh temp folder with a unique name and deletes it afterwards.
-- `diskpart /s` runs with stdout streamed line by line into the UI.
-- Success is judged by the exit code and then by reading the disks again, not by parsing text.
-- Only one diskpart run at a time. Microsoft's docs say to leave at least 15 seconds between back-to-back scripts so the previous one has fully shut down, so the runner enforces a short cooldown.
-- Most operations can't be cancelled once started. Killing diskpart halfway through a format or clean can leave a disk half written, so the UI only offers an abort for `clean all`, which can take hours.
+- `diskpart /s` runs with its output streamed line by line into the UI.
+- Only one diskpart run at a time. Microsoft's docs say to leave about 15 seconds between back-to-back scripts so the previous one has fully shut down, so the runner waits if it needs to.
+- Success is judged by the exit code and then by reading the disks again, never by parsing text.
+- Most operations can't be cancelled once started. Killing diskpart halfway through a format or clean can leave a disk half written, so the UI only offers a stop button for `clean all`, which can take hours.
+
+### Things we learned by testing on real Windows
+
+These came out of the integration tests, which run every operation through real diskpart on throwaway VHDX files.
+
+- **Exit codes:** Microsoft documents small exit codes (0 to 5) for scripts, but a failing command on current Windows returns a Windows error code instead, like `0x80070057`. Diskpart+ treats anything that isn't zero as a failure and shows the code in hex.
+- **Script encoding:** diskpart reads script files in the console's OEM code page. ANSI, UTF-8 (with or without a BOM) and UTF-16 all come out garbled. So scripts are written in plain ASCII when possible and in the OEM code page otherwise. If a label or path has characters that code page can't hold, the planner blocks it with a clear message instead of letting diskpart write the wrong characters.
+- **`convert gpt` adds an MSR:** on Windows, converting even a small disk to GPT creates a 16 MB Microsoft reserved partition first. Code that looks for "the data partition" shouldn't assume it's partition 1.
+- **Extend can give back a bit more than shrink took:** diskpart may reclaim alignment space, so a partition can end up slightly bigger than before.
+
+## Checking the UI
+
+The app has a hidden `--render-to <folder>` switch. It opens the main window and a review window, saves PNGs of them in light and dark mode and quits without running diskpart. CI runs it on every push against a virtual disk laid out like a Mac drive, so a broken layout or a XAML error fails the build.
 
 ## Elevation
 
