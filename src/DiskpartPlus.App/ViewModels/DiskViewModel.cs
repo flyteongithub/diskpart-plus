@@ -61,6 +61,14 @@ public sealed class DiskViewModel
 
     public string ReadOnlyActionText => Disk.IsReadOnly ? "Clear read-only" : "Make read-only";
 
+    public string OnlineActionTip => Disk.IsOffline
+        ? "Make the disk available to Windows again."
+        : "Hide the disk from Windows. The data isn't touched.";
+
+    public string ReadOnlyActionTip => Disk.IsReadOnly
+        ? "Clear the read-only flag. Fixes most stuck \"write protected\" drives."
+        : "Block all writes to the disk.";
+
     public Visibility DetachVisibility => Disk.IsVirtual ? Visibility.Visible : Visibility.Collapsed;
 
     private string? BusText => Disk.Bus switch

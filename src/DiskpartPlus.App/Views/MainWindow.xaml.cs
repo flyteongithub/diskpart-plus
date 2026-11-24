@@ -12,6 +12,18 @@ public partial class MainWindow : Window
 
     public MainViewModel ViewModel => _viewModel;
 
+    // "More" style buttons open their menu on a normal click, lined up under the button.
+    private void OpenMenu_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { ContextMenu: { } menu } button)
+        {
+            menu.DataContext = button.DataContext;
+            menu.PlacementTarget = button;
+            menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+            menu.IsOpen = true;
+        }
+    }
+
     public MainWindow()
     {
         InitializeComponent();

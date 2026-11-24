@@ -24,9 +24,19 @@
                 <TextBlock Text="{Binding VersionText}" Style="{StaticResource CaptionText}" VerticalAlignment="Center" Margin="10,4,0,0" />
             </StackPanel>
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                <Button Content="Create virtual disk..." Command="{Binding CreateVhdCommand}" Margin="0,0,8,0" />
-                <Button Content="Attach virtual disk..." Command="{Binding AttachVhdCommand}" Margin="0,0,8,0" />
-                <Button Content="Refresh" Command="{Binding RefreshCommand}" Margin="0,0,8,0" />
+                <Button Click="OpenMenu_Click" Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Virtual disk" />
+                        <TextBlock Text="&#xE70D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10" Margin="8,2,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <Button.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Create..." Command="{Binding CreateVhdCommand}" ToolTip="New .vhdx or .vhd file." ToolTipService.ShowOnDisabled="True" />
+                            <MenuItem Header="Attach..." Command="{Binding AttachVhdCommand}" ToolTip="Mount a .vhdx or .vhd file." ToolTipService.ShowOnDisabled="True" />
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+                <Button Content="Refresh" Command="{Binding RefreshCommand}" ToolTip="Re-read all disks." Margin="0,0,8,0" />
                 <Button Content="About" Command="{Binding AboutCommand}" />
             </StackPanel>
         </DockPanel>
@@ -174,15 +184,26 @@
                         </ListBox>
 
                         <WrapPanel Margin="0,12,0,-8">
-                            <Button Content="Wipe and reuse..." Command="{Binding WipeAndReuseCommand}" Margin="0,0,8,8" />
-                            <Button Content="Create partition..." Command="{Binding CreatePartitionCommand}" Margin="0,0,8,8" />
-                            <Button Content="Convert GPT / MBR..." Command="{Binding ConvertCommand}" Margin="0,0,8,8" />
-                            <Button Content="Clean" Command="{Binding CleanCommand}" Margin="0,0,8,8" />
-                            <Button Content="Clean all" Command="{Binding CleanAllCommand}" Margin="0,0,8,8" />
-                            <Button Content="{Binding SelectedDisk.OnlineActionText}" Command="{Binding ToggleOnlineCommand}" Margin="0,0,8,8" />
-                            <Button Content="{Binding SelectedDisk.ReadOnlyActionText}" Command="{Binding ToggleReadOnlyCommand}" Margin="0,0,8,8" />
-                            <Button Content="Change disk ID..." Command="{Binding ChangeDiskIdCommand}" Margin="0,0,8,8" />
-                            <Button Content="Detach" Command="{Binding DetachCommand}" Visibility="{Binding SelectedDisk.DetachVisibility}" Margin="0,0,8,8" />
+                            <Button Content="Wipe and reuse..." Command="{Binding WipeAndReuseCommand}" ToolTip="Clean, convert and make one formatted partition that fills the disk." ToolTipService.ShowOnDisabled="True" Margin="0,0,8,8" />
+                            <Button Content="Create partition..." Command="{Binding CreatePartitionCommand}" ToolTip="New partition in the free space." ToolTipService.ShowOnDisabled="True" Margin="0,0,8,8" />
+                            <Button Content="Clean" Command="{Binding CleanCommand}" ToolTip="Remove all partitions." ToolTipService.ShowOnDisabled="True" Margin="0,0,8,8" />
+                            <Button Click="OpenMenu_Click" Margin="0,0,8,8">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="More" />
+                                    <TextBlock Text="&#xE70D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10" Margin="8,2,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <Button.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Clean all" Command="{Binding CleanAllCommand}" ToolTip="Remove all partitions and zero every sector. Can take hours." ToolTipService.ShowOnDisabled="True" />
+                                        <MenuItem Header="Convert GPT / MBR..." Command="{Binding ConvertCommand}" ToolTip="Switch the partition style. Cleans the disk first if needed." ToolTipService.ShowOnDisabled="True" />
+                                        <Separator />
+                                        <MenuItem Header="{Binding SelectedDisk.OnlineActionText}" Command="{Binding ToggleOnlineCommand}" ToolTip="{Binding SelectedDisk.OnlineActionTip}" ToolTipService.ShowOnDisabled="True" />
+                                        <MenuItem Header="{Binding SelectedDisk.ReadOnlyActionText}" Command="{Binding ToggleReadOnlyCommand}" ToolTip="{Binding SelectedDisk.ReadOnlyActionTip}" ToolTipService.ShowOnDisabled="True" />
+                                        <MenuItem Header="Change disk ID..." Command="{Binding ChangeDiskIdCommand}" ToolTip="New GPT GUID or MBR signature. Fixes ID clashes after cloning." ToolTipService.ShowOnDisabled="True" />
+                                        <MenuItem Header="Detach" Command="{Binding DetachCommand}" ToolTip="Unmount this virtual disk." ToolTipService.ShowOnDisabled="True" Visibility="{Binding SelectedDisk.DetachVisibility}" />
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                            </Button>
                         </WrapPanel>
                     </StackPanel>
                 </Border>
@@ -225,14 +246,24 @@
                                        Visibility="{Binding SelectedDisk.HasNoPartitions, Converter={StaticResource BoolToVisibility}}" />
                         </Grid>
                         <WrapPanel Margin="0,12,0,-8">
-                            <Button Content="Format..." Command="{Binding FormatCommand}" Margin="0,0,8,8" />
-                            <Button Content="Delete" Command="{Binding DeleteCommand}" Margin="0,0,8,8" />
-                            <Button Content="Drive letter..." Command="{Binding ChangeLetterCommand}" Margin="0,0,8,8" />
-                            <Button Content="Remove letter" Command="{Binding RemoveLetterCommand}" Margin="0,0,8,8" />
-                            <Button Content="Extend..." Command="{Binding ExtendCommand}" Margin="0,0,8,8" />
-                            <Button Content="Shrink..." Command="{Binding ShrinkCommand}" Margin="0,0,8,8" />
-                            <Button Content="Change type..." Command="{Binding ChangeTypeCommand}" Margin="0,0,8,8" />
-                            <Button Content="GPT attributes..." Command="{Binding GptAttributesCommand}" Margin="0,0,8,8" />
+                            <Button Content="Format..." Command="{Binding FormatCommand}" ToolTip="New file system. Erases the partition." ToolTipService.ShowOnDisabled="True" Margin="0,0,8,8" />
+                            <Button Content="Delete" Command="{Binding DeleteCommand}" ToolTip="Remove the partition. Protected types use override." ToolTipService.ShowOnDisabled="True" Margin="0,0,8,8" />
+                            <Button Content="Drive letter..." Command="{Binding ChangeLetterCommand}" ToolTip="Assign or change the drive letter." ToolTipService.ShowOnDisabled="True" Margin="0,0,8,8" />
+                            <Button Content="Extend..." Command="{Binding ExtendCommand}" ToolTip="Grow into free space right after it. NTFS and ReFS only." ToolTipService.ShowOnDisabled="True" Margin="0,0,8,8" />
+                            <Button Content="Shrink..." Command="{Binding ShrinkCommand}" ToolTip="Make it smaller and leave free space after it. NTFS only." ToolTipService.ShowOnDisabled="True" Margin="0,0,8,8" />
+                            <Button Click="OpenMenu_Click" Margin="0,0,8,8">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="More" />
+                                    <TextBlock Text="&#xE70D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10" Margin="8,2,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <Button.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Remove letter" Command="{Binding RemoveLetterCommand}" ToolTip="Unmount the drive letter. The data stays." ToolTipService.ShowOnDisabled="True" />
+                                        <MenuItem Header="Change type..." Command="{Binding ChangeTypeCommand}" ToolTip="Change the partition type ID (set id)." ToolTipService.ShowOnDisabled="True" />
+                                        <MenuItem Header="GPT attributes..." Command="{Binding GptAttributesCommand}" ToolTip="Hidden, read-only, no default letter and other GPT flags." ToolTipService.ShowOnDisabled="True" />
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                            </Button>
                         </WrapPanel>
                     </StackPanel>
                 </Border>
